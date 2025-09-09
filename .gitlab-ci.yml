@@ -48,7 +48,7 @@ deploy:
       - echo "Removing docker daemon ..."
       - sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "docker rm mwanamama-shop || true"
       - echo "Starting docker daemon ..."
-      - sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "docker run -d --name mwanamama-shop -p  6700:80 registry.gitlab.com/all1401249/mwanamama-shop:main"
+      - sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "docker run -d --name mwanamama-shop -p  7200:80 registry.gitlab.com/all1401249/mwanamama-shop:main"
 
 
 
