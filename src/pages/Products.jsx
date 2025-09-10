@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ProductCard from '../components/ProductCard';
 import {
-  Search, SlidersHorizontal, ArrowDownWideNarrow, Grid3X3, List, ChevronRight
+  Search, SlidersHorizontal, ArrowDownWideNarrow, Grid3X3, List, ChevronRight, ChevronLeft
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
@@ -35,6 +35,7 @@ const Products = () => {
   const { adminToken } = useAdminAuth();
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const authToken = adminToken || (user?.token || localStorage.getItem('userToken'));
 
@@ -53,6 +54,10 @@ const Products = () => {
   const [lastToastId, setLastToastId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   
+  // State for sectional pagination
+  const [sectionPages, setSectionPages] = useState({});
+  const productsPerSection = 12;
+
   const { cartItems, wishlistItems, addToCart, toggleWishlist } = useCart();
 
   // Custom toast handler to prevent duplicates
@@ -282,7 +287,7 @@ const Products = () => {
 
     sectionNames.forEach((sectionName) => {
       const availableProducts = shuffledProducts.filter(product => !usedProductIds.has(product.id));
-      const sectionProducts = availableProducts.slice(0, productsPerSection);
+      const sectionProducts = availableProducts.slice(0, productsPerSection * 3); // Fetch more for scrolling
       
       sectionProducts.forEach(product => usedProductIds.add(product.id));
       
@@ -349,6 +354,33 @@ const Products = () => {
     setSelectedProduct(null);
   };
 
+  // Refs for each carousel container
+  const carouselRefs = useRef({});
+  const getCarouselRef = (section) => {
+    if (!carouselRefs.current[section]) {
+      carouselRefs.current[section] = React.createRef();
+    }
+    return carouselRefs.current[section];
+  };
+
+  const handleSectionNext = (sectionName) => {
+    const carouselRef = getCarouselRef(sectionName);
+    if (carouselRef.current) {
+      const cardWidth = carouselRef.current.querySelector('.product-card-col').offsetWidth;
+      carouselRef.current.scrollLeft += cardWidth * 6;
+      setSectionPages(prev => ({ ...prev, [sectionName]: (prev[sectionName] || 0) + 1 }));
+    }
+  };
+  
+  const handleSectionPrev = (sectionName) => {
+    const carouselRef = getCarouselRef(sectionName);
+    if (carouselRef.current) {
+      const cardWidth = carouselRef.current.querySelector('.product-card-col').offsetWidth;
+      carouselRef.current.scrollLeft -= cardWidth * 6;
+      setSectionPages(prev => ({ ...prev, [sectionName]: Math.max(0, (prev[sectionName] || 0) - 1) }));
+    }
+  };
+
   const sections = [
     'All Products',
     'Recommended for You',
@@ -362,7 +394,7 @@ const Products = () => {
 
   if (loading) {
     return (
-      <div className="container-fluid py-5 px-2">
+      <div className="container-fluid py-5 px-4">
         <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
           {[...Array(12)].map((_, index) => (
             <div key={index} className="col">
@@ -380,7 +412,7 @@ const Products = () => {
 
   if (error) {
     return (
-      <div className="container-fluid py-5 px-2">
+      <div className="container-fluid py-5 px-4">
         <div className="alert alert-danger text-center mx-auto" role="alert" style={{ maxWidth: '600px' }}>
           <h4 className="alert-heading">Error Loading Products</h4>
           <p>{error}</p>
@@ -397,9 +429,100 @@ const Products = () => {
 
   return (
     <>
-      <div className="container-fluid py-4 px-2">
+      <style>
+        {`
+          .product-carousel-container {
+            position: relative;
+            overflow: hidden;
+          }
+          .product-carousel-row {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+          }
+          .product-carousel-row::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+          }
+          .product-card-col {
+            flex-shrink: 0;
+            padding: 0 0.5rem;
+          }
+          .carousel-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            border-radius: 50%;
+            height: 40px;
+            width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+          }
+          .carousel-nav-btn:hover {
+            opacity: 1;
+          }
+          .carousel-nav-btn.prev {
+            left: 0;
+          }
+          .carousel-nav-btn.next {
+            right: 0;
+          }
+          .product-grid-container {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          }
+          .product-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+          }
+
+          /* Responsive adjustments for columns */
+          @media (min-width: 1400px) {
+            .product-card-col {
+              width: calc(100% / 6 - 1rem);
+            }
+          }
+          @media (min-width: 1200px) and (max-width: 1399.98px) {
+            .product-card-col {
+              width: calc(100% / 5 - 1rem);
+            }
+          }
+          @media (min-width: 992px) and (max-width: 1199.98px) {
+            .product-card-col {
+              width: calc(100% / 4 - 1rem);
+            }
+          }
+          @media (min-width: 768px) and (max-width: 991.98px) {
+            .product-card-col {
+              width: calc(100% / 3 - 1rem);
+            }
+          }
+          @media (min-width: 576px) and (max-width: 767.98px) {
+            .product-card-col {
+              width: calc(100% / 2 - 1rem);
+            }
+          }
+          @media (max-width: 575.98px) {
+            .product-card-col {
+              width: 100%;
+            }
+          }
+        `}
+      </style>
+      <div className="container-fluid py-4 px-1">
         {/* Search, Filter, and View Controls */}
-        <div className="bg-light p-4 rounded-3 mb-4">
+        <div className="bg-light p-2 rounded-3 mb-4">
           <div className="row align-items-center">
             <div className="col-lg-6 mb-3 mb-lg-0">
               <div className="position-relative">
@@ -523,7 +646,7 @@ const Products = () => {
                   onClick={() => setRefreshKey(prev => prev + 1)}
                   title="Refresh products"
                 >
-                  🔄 Refresh
+                  🔄
                 </button>
               </div>
             </div>
@@ -533,35 +656,31 @@ const Products = () => {
         {/* Dynamically Render Product Sections */}
         {sections.map((section, index) => {
           let productsToDisplay = [];
+          
           if (section === 'All Products') {
             productsToDisplay = filteredAndSortedProducts;
           } else if (searchQuery.trim()) {
+            // If a search is active, hide all other sections
             return null;
           } else {
             productsToDisplay = categorizedProducts[section] || [];
-          }
-          
-          if (productsToDisplay.length === 0 && section === 'All Products' && !loading) {
-            return (
-              <div key="no-results" className="text-center py-5">
-                <div className="text-muted">
-                  <Search size={64} className="mb-4 opacity-50" />
-                  <h4 className="mb-3">No products found</h4>
-                  <p className="mb-4">Try a different search term or check your filters.</p>
-                </div>
-              </div>
-            );
           }
           
           if (productsToDisplay.length === 0) {
             return null;
           }
 
+          // Slice the products based on the current page for the section
+          const currentPage = sectionPages[section] || 0;
+          const start = currentPage * 6;
+          const end = start + 6;
+          const hasMore = end < productsToDisplay.length;
+
           const bgColor = sectionColors[index % sectionColors.length];
           
           return (
             <div key={`${section}-${refreshKey}`} className="mb-5">
-              <div className={`p-3 rounded-3 mb-4 text-white d-flex justify-content-between align-items-center ${bgColor}`}>
+              <div className={`p-2 rounded-3 mb-4 text-white d-flex justify-content-between align-items-center ${bgColor}`}>
                 <div>
                   <h2 className="display-6 fw-bold mb-0" style={{ fontSize: '1.75rem' }}>{section}</h2>
                   <small className="opacity-75">({productsToDisplay.length} products)</small>
@@ -571,36 +690,56 @@ const Products = () => {
                 </Link>
               </div>
               
-              {viewMode === 'grid' ? (
-                <div className="row">
+              <div className="product-carousel-container">
+                <div 
+                  ref={getCarouselRef(section)}
+                  className="product-carousel-row"
+                >
                   {productsToDisplay.map(product => (
-                    <div key={`${section}-${product.id}-${refreshKey}`} className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4">
-                      <ProductCard 
-                        product={product} 
-                        onViewDetails={handleViewProductDetails}
-                        addToCart={() => handleAddToCart(product)}
-                        toggleWishlist={() => handleToggleWishlist(product)}
-                        cartItems={cartItems}
-                        wishlistItems={wishlistItems}
-                      />
+                    <div key={`${section}-${product.id}-${refreshKey}`} className="product-card-col">
+                      {viewMode === 'grid' ? (
+                        <ProductCard 
+                          product={product} 
+                          onViewDetails={handleViewProductDetails}
+                          addToCart={() => handleAddToCart(product)}
+                          toggleWishlist={() => handleToggleWishlist(product)}
+                          cartItems={cartItems}
+                          wishlistItems={wishlistItems}
+                        />
+                      ) : (
+                        <ProductListCard
+                          product={product}
+                          onViewDetails={handleViewProductDetails}
+                          addToCart={() => handleAddToCart(product)}
+                          toggleWishlist={() => handleToggleWishlist(product)}
+                          cartItems={cartItems}
+                          wishlistItems={wishlistItems}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div>
-                  {productsToDisplay.map(product => (
-                    <ProductListCard 
-                      key={`${section}-${product.id}-${refreshKey}`} 
-                      product={product}
-                      onViewDetails={handleViewProductDetails}
-                      addToCart={() => handleAddToCart(product)}
-                      toggleWishlist={() => handleToggleWishlist(product)}
-                      cartItems={cartItems}
-                      wishlistItems={wishlistItems}
-                    />
-                  ))}
-                </div>
-              )}
+                
+                {/* Previous Button */}
+                {(sectionPages[section] || 0) > 0 && (
+                  <button 
+                    className="btn btn-light carousel-nav-btn prev shadow-sm"
+                    onClick={() => handleSectionPrev(section)}
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                )}
+                
+                {/* Next Button */}
+                {hasMore && (
+                  <button 
+                    className="btn btn-light carousel-nav-btn next shadow-sm"
+                    onClick={() => handleSectionNext(section)}
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}

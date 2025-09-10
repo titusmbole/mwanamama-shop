@@ -1,14 +1,41 @@
 import React, { useState, useMemo, useEffect } from "react";
 import axios from "axios";
-import { Truck, ShoppingCart, Lock, Shield, CheckCircle, User } from "lucide-react";
+import { Truck, ShoppingCart, Lock, Shield, CheckCircle, User, X } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
-import { toast, ToastContainer } from "react-toastify"; // Added ToastContainer import
-import "react-toastify/dist/ReactToastify.css"; // Added CSS import
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BASE_URL = "https://api.mwanamama.org/api/v1";
 
-// Skeleton Components
+const ErrorModal = ({ message, onClose }) => {
+  if (!message) return null;
+
+  return (
+    <div className="modal-backdrop-custom">
+      <div className="modal-dialog-custom modal-sm modal-dialog-centered">
+        <div className="modal-content-custom rounded-4 shadow-lg border-0">
+          <div className="modal-header-custom p-4 border-bottom-0 position-relative">
+            <h5 className="modal-title fw-bold text-danger">Order Failed</h5>
+            <button type="button" className="btn-close-custom" onClick={onClose}>
+              <X size={24} />
+            </button>
+          </div>
+          <div className="modal-body-custom p-4 text-center">
+            <p className="fw-semibold mb-2">{message}</p>
+            <p className="text-muted small">Please adjust the items in your cart to proceed.</p>
+          </div>
+          <div className="modal-footer d-flex justify-content-center border-top-0">
+            <button type="button" className="btn btn-secondary px-4 rounded-pill" onClick={onClose}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SkeletonCard = ({ children }) => (
   <div className="card mb-4 border-0 shadow-sm">
     <div className="card-body p-4">
@@ -36,15 +63,12 @@ const CheckoutSkeleton = () => (
     <div className="container-fluid">
       <div className="row justify-content-center">
         <div className="col-12 col-xl-10">
-          {/* Header Skeleton */}
           <div className="text-center mb-5">
             <div className="skeleton mx-auto mb-3" style={{ width: "400px", height: "48px" }} />
             <div className="skeleton mx-auto" style={{ width: "200px", height: "24px" }} />
           </div>
-          
           <div className="row g-4">
             <div className="col-lg-8">
-              {/* Progress Bar Skeleton */}
               <SkeletonCard>
                 <div className="d-flex align-items-center justify-content-between">
                   <div className="d-flex align-items-center">
@@ -63,8 +87,6 @@ const CheckoutSkeleton = () => (
                   </div>
                 </div>
               </SkeletonCard>
-
-              {/* Customer Information Skeleton */}
               <SkeletonCard>
                 <div className="d-flex align-items-center mb-4">
                   <div className="skeleton rounded-3 me-3" style={{ width: '48px', height: '48px' }} />
@@ -73,7 +95,6 @@ const CheckoutSkeleton = () => (
                     <div className="skeleton" style={{ width: "140px", height: "16px" }} />
                   </div>
                 </div>
-                
                 <div className="row g-3">
                   <div className="col-md-12">
                     <SkeletonInput />
@@ -95,8 +116,6 @@ const CheckoutSkeleton = () => (
                   </div>
                 </div>
               </SkeletonCard>
-
-              {/* Additional Information Skeleton */}
               <SkeletonCard>
                 <div className="d-flex align-items-center mb-4">
                   <div className="skeleton rounded-3 me-3" style={{ width: '48px', height: '48px' }} />
@@ -105,7 +124,6 @@ const CheckoutSkeleton = () => (
                     <div className="skeleton" style={{ width: "120px", height: "16px" }} />
                   </div>
                 </div>
-                
                 <div className="row g-3">
                   <div className="col-md-6">
                     <SkeletonInput />
@@ -118,8 +136,6 @@ const CheckoutSkeleton = () => (
                   </div>
                 </div>
               </SkeletonCard>
-
-              {/* Order Products Skeleton */}
               <SkeletonCard>
                 <div className="d-flex align-items-center mb-4">
                   <div className="skeleton rounded-3 p-2 me-3" style={{ width: '48px', height: '48px' }} />
@@ -128,8 +144,6 @@ const CheckoutSkeleton = () => (
                     <div className="skeleton" style={{ width: "160px", height: "16px" }} />
                   </div>
                 </div>
-                
-                {/* Product Items Skeleton */}
                 {[1, 2].map(i => (
                   <div key={i} className="border rounded-3 p-3 mb-3">
                     <div className="d-flex align-items-start">
@@ -151,24 +165,19 @@ const CheckoutSkeleton = () => (
                     </div>
                   </div>
                 ))}
-                
                 <div className="skeleton" style={{ width: "100%", height: "50px" }} />
               </SkeletonCard>
             </div>
-
             <div className="col-lg-4">
-              {/* Order Summary Skeleton */}
               <div className="card border-0 shadow-sm sticky-top" style={{ top: '20px' }}>
                 <div className="card-body p-4">
                   <div className="d-flex align-items-center mb-4">
                     <div className="skeleton rounded-3 p-2 me-3" style={{ width: '48px', height: '48px' }} />
                     <div className="skeleton" style={{ width: "140px", height: "24px" }} />
                   </div>
-
                   <div className="mb-4">
                     <div className="skeleton rounded-3" style={{ width: "100%", height: "60px" }} />
                   </div>
-
                   <div className="mb-4">
                     {[1, 2, 3].map(i => (
                       <div key={i} className="d-flex justify-content-between mb-2">
@@ -182,7 +191,6 @@ const CheckoutSkeleton = () => (
                       <div className="skeleton" style={{ width: "100px", height: "32px" }} />
                     </div>
                   </div>
-
                   <div className="skeleton w-100" style={{ height: "56px" }} />
                   <div className="skeleton mx-auto mt-3" style={{ width: "80%", height: "16px" }} />
                 </div>
@@ -192,8 +200,6 @@ const CheckoutSkeleton = () => (
         </div>
       </div>
     </div>
-    
-    {/* Skeleton Styles */}
     <style>{`
       .skeleton {
         background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -201,12 +207,10 @@ const CheckoutSkeleton = () => (
         animation: loading 1.5s infinite;
         border-radius: 4px;
       }
-      
       @keyframes loading {
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
       }
-      
       .bg-light {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
       }
@@ -217,10 +221,8 @@ const CheckoutSkeleton = () => (
 const Checkout = () => {
   const { cartItems, clearCart } = useCart();
   const { admin, adminToken } = useAdminAuth();
-
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
-
   const [formData, setFormData] = useState({
     clientId: "",
     firstName: "",
@@ -234,15 +236,13 @@ const Checkout = () => {
     creditOfficerId: "",
     creditOfficerName: "",
   });
-
   const [groups, setGroups] = useState([]);
   const [clients, setClients] = useState([]);
   const [branches, setBranches] = useState([]);
-
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
-
-  // Calculate order summary
+  const [loanLimitError, setLoanLimitError] = useState(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const orderSummary = useMemo(() => {
     const subtotal = cartItems.reduce(
       (acc, item) => acc + item.price * item.quantity,
@@ -264,7 +264,6 @@ const Checkout = () => {
     };
   }, [cartItems]);
 
-  // Fetch groups & branches with token
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -276,7 +275,6 @@ const Checkout = () => {
             headers: { Authorization: `Bearer ${adminToken}` },
           }),
         ]);
-
         setGroups(groupsRes.data?.content || groupsRes.data || []);
         setBranches(branchesRes.data?.content || branchesRes.data || []);
       } catch (error) {
@@ -286,22 +284,18 @@ const Checkout = () => {
         setIsLoadingData(false);
       }
     };
-
     if (adminToken) {
       fetchData();
     }
   }, [adminToken]);
 
-  // Handle form input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle group selection and fetch members
   const handleGroupSelect = async (groupId) => {
     setSelectedGroupId(groupId);
-    
     if (!groupId || groupId === "") {
       setFormData((prev) => ({
         ...prev,
@@ -367,10 +361,8 @@ const Checkout = () => {
     }
   };
 
-  // Handle client selection
   const handleClientSelect = (clientId) => {
     setSelectedClientId(clientId);
-    
     if (!clientId || clientId === "") {
       setFormData((prev) => ({
         ...prev,
@@ -404,7 +396,8 @@ const Checkout = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
-    console.log("Submit button clicked. Processing order...");
+    setLoanLimitError(null);
+    setShowErrorModal(false);
 
     if (cartItems.length === 0) {
       toast.error("Your cart is empty! Add products before checking out.");
@@ -412,7 +405,6 @@ const Checkout = () => {
       return;
     }
 
-    // Comprehensive client-side validation
     const requiredFields = [
       { field: 'clientId', label: 'Client' },
       { field: 'groupId', label: 'Group' },
@@ -466,7 +458,6 @@ const Checkout = () => {
           position: "top-center",
           autoClose: 3000,
         });
-
         clearCart();
         setFormData({
           clientId: "",
@@ -483,10 +474,7 @@ const Checkout = () => {
         });
         setSelectedClientId("");
         setSelectedGroupId("");
-
       } else {
-        // This block handles cases where the API returns a non-2xx but non-error status
-        console.log("Order placement failed with status:", response.status);
         toast.error(response.data?.message || "Failed to place order. Unexpected response.");
       }
     } catch (error) {
@@ -497,7 +485,13 @@ const Checkout = () => {
         const apiErrorMessage = error.response?.data?.message || 
                                error.response?.data?.error || 
                                "Failed to place order. Please check your network.";
-        toast.error(apiErrorMessage);
+        
+        if (apiErrorMessage.toLowerCase().includes("loan limit reached")) {
+          setLoanLimitError(apiErrorMessage);
+          setShowErrorModal(true);
+        } else {
+          toast.error(apiErrorMessage);
+        }
       } else {
         toast.error("An unexpected error occurred. Please try again.");
       }
@@ -506,324 +500,381 @@ const Checkout = () => {
     }
   };
 
-  // Show skeleton while loading
+  const handleCloseErrorModal = () => {
+    setShowErrorModal(false);
+    setLoanLimitError(null);
+  };
+
   if (isLoadingData) {
     return <CheckoutSkeleton />;
   }
 
   return (
-    <div className="min-vh-100 bg-light py-4">
-      <div className="container-fluid">
-        <div className="row justify-content-center">
-          <div className="col-12 col-xl-10">
-            <div className="text-center mb-5">
-              <h1 className="display-4 fw-bold text-primary mb-3">Complete Your Order</h1>
-              <p className="text-muted fs-5">Secure checkout process</p>
-            </div>
-            <div className="row g-4">
-              <div className="col-lg-8">
-                <div className="card mb-4 border-0 shadow-sm">
-                  <div className="card-body py-3">
-                    <div className="d-flex align-items-center justify-content-between">
-                      <div className="d-flex align-items-center">
-                        <div className="bg-success rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '32px', height: '32px' }}>
-                          <CheckCircle size={20} className="text-white" />
+    <>
+      <div className="min-vh-100 bg-light py-4">
+        <div className="container-fluid">
+          <div className="row justify-content-center">
+            <div className="col-12 col-xl-10">
+              <div className="text-center mb-5">
+                <h1 className="display-4 fw-bold text-primary mb-3">Complete Your Order</h1>
+                <p className="text-muted fs-5">Secure checkout process</p>
+              </div>
+              <div className="row g-4">
+                <div className="col-lg-8">
+                  <div className="card mb-4 border-0 shadow-sm">
+                    <div className="card-body py-3">
+                      <div className="d-flex align-items-center justify-content-between">
+                        <div className="d-flex align-items-center">
+                          <div className="bg-success rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '32px', height: '32px' }}>
+                            <CheckCircle size={20} className="text-white" />
+                          </div>
+                          <span className="fw-semibold text-dark">Cart</span>
                         </div>
-                        <span className="fw-semibold text-dark">Cart</span>
-                      </div>
-                      <div className="flex-fill mx-3" style={{ height: '1px', backgroundColor: '#dee2e6' }}></div>
-                      <div className="d-flex align-items-center">
-                        <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2 text-white fw-bold" style={{ width: '32px', height: '32px' }}>
-                          2
+                        <div className="flex-fill mx-3" style={{ height: '1px', backgroundColor: '#dee2e6' }}></div>
+                        <div className="d-flex align-items-center">
+                          <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2 text-white fw-bold" style={{ width: '32px', height: '32px' }}>
+                            2
+                          </div>
+                          <span className="fw-semibold text-primary">Checkout</span>
                         </div>
-                        <span className="fw-semibold text-primary">Checkout</span>
-                      </div>
-                      <div className="flex-fill mx-3" style={{ height: '1px', backgroundColor: '#dee2e6' }}></div>
-                      <div className="d-flex align-items-center">
-                        <div className="bg-light border rounded-circle d-flex align-items-center justify-content-center me-2 text-muted fw-bold" style={{ width: '32px', height: '32px' }}>
-                          3
+                        <div className="flex-fill mx-3" style={{ height: '1px', backgroundColor: '#dee2e6' }}></div>
+                        <div className="d-flex align-items-center">
+                          <div className="bg-light border rounded-circle d-flex align-items-center justify-content-center me-2 text-muted fw-bold" style={{ width: '32px', height: '32px' }}>
+                            3
+                          </div>
+                          <span className="fw-semibold text-muted">Confirmation</span>
                         </div>
-                        <span className="fw-semibold text-muted">Confirmation</span>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="card mb-4 border-0 shadow-sm">
-                  <div className="card-body p-4">
-                    <div className="d-flex align-items-center mb-4">
-                      <div className="bg-primary bg-opacity-10 rounded-3 p-2 me-3">
-                        <User className="text-primary" size={24} />
-                      </div>
-                      <div>
-                        <h4 className="mb-1 fw-semibold">Customer Information</h4>
-                        <p className="text-muted mb-0 small">Please provide your details</p>
-                      </div>
-                    </div>
-                    
-                    <div className="row g-3">
-                      <div className="col-md-12">
-                        <label className="form-label fw-medium">Group Name</label>
-                        <select
-                          className="form-select form-select-lg"
-                          value={selectedGroupId || ""}
-                          onChange={(e) => handleGroupSelect(e.target.value)}
-                        >
-                          <option value="">Select a Group</option>
-                          {groups.map((group) => (
-                            <option key={group.id} value={group.id}>
-                              {group.groupName || group.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="col-md-12">
-                        <label className="form-label fw-medium">Client</label>
-                        <select
-                          className="form-select form-select-lg"
-                          value={selectedClientId || ""}
-                          onChange={(e) => handleClientSelect(e.target.value)}
-                          disabled={!selectedGroupId}
-                        >
-                          <option value="">Select a Client</option>
-                          {clients.map((client) => (
-                            <option key={client.id} value={client.id}>
-                              {client.fullName} ({client.clientNumber})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="col-md-6">
-                        <label className="form-label fw-medium">First Name</label>
-                        <input
-                          type="text"
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleChange}
-                          className="form-control form-control-lg"
-                          placeholder="John"
-                          readOnly
-                        />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label fw-medium">Last Name</label>
-                        <input
-                          type="text"
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleChange}
-                          className="form-control form-control-lg"
-                          placeholder="Doe"
-                          readOnly
-                        />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label fw-medium">Branch</label>
-                        <input
-                          type="text"
-                          name="branchName"
-                          value={formData.branchName}
-                          className="form-control form-control-lg"
-                          placeholder="Main Branch"
-                          readOnly
-                        />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label fw-medium">Phone Number</label>
-                        <input
-                          type="tel"
-                          name="phoneNumber"
-                          value={formData.phoneNumber}
-                          onChange={handleChange}
-                          className="form-control form-control-lg"
-                          placeholder="+254 700 000 000"
-                          readOnly
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card mb-4 border-0 shadow-sm">
-                  <div className="card-body p-4">
-                    <div className="d-flex align-items-center mb-4">
-                      <div className="bg-success bg-opacity-10 rounded-3 p-2 me-3">
-                        <Truck className="text-success" size={24} />
-                      </div>
-                      <div>
-                        <h4 className="mb-1 fw-semibold">Additional Information</h4>
-                        <p className="text-muted mb-0 small">Loan and group details</p>
-                      </div>
-                    </div>
-                    
-                    <div className="row g-3">
-                      <div className="col-md-6">
-                        <label className="form-label fw-medium">Location</label>
-                        <input
-                          type="text"
-                          name="location"
-                          value={formData.location}
-                          onChange={handleChange}
-                          className="form-control form-control-lg"
-                          placeholder="Nairobi, Kenya"
-                        />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label fw-medium">Credit Officer</label>
-                        <input
-                          type="text"
-                          name="creditOfficerName"
-                          value={formData.creditOfficerName}
-                          className="form-control form-control-lg"
-                          readOnly
-                          style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card border-0 shadow-sm">
-                  <div className="card-body p-4">
-                    <div className="d-flex align-items-center mb-4">
-                      <div className="bg-info bg-opacity-10 rounded-3 p-2 me-3">
-                        <ShoppingCart className="text-info" size={24} />
-                      </div>
-                      <div>
-                        <h4 className="mb-1 fw-semibold">Order Products</h4>
-                        <p className="text-muted mb-0 small">Review your selected items</p>
-                      </div>
-                    </div>
-                    
-                    <div className="mb-4">
-                      {orderSummary.items.length === 0 ? (
-                        <div className="text-center py-4">
-                          <p className="text-muted">Your cart is empty. Please add products to continue.</p>
+                  <div className="card mb-4 border-0 shadow-sm">
+                    <div className="card-body p-4">
+                      <div className="d-flex align-items-center mb-4">
+                        <div className="bg-primary bg-opacity-10 rounded-3 p-2 me-3">
+                          <User className="text-primary" size={24} />
                         </div>
-                      ) : (
-                        orderSummary.items.map(item => (
-                          <div key={item.id} className="border rounded-3 p-3 mb-3">
-                            <div className="d-flex align-items-start">
-                              <img 
-                                src={item.image} 
-                                alt={item.name} 
-                                className="me-3 rounded" 
-                                style={{ width: '80px', height: '80px', objectFit: 'cover' }} 
-                              />
-                              <div className="flex-grow-1">
-                                <h6 className="fw-semibold mb-2">{item.name}</h6>
-                                <p className="text-muted small mb-2">{item.description || "Product description"}</p>
-                                <div className="row">
-                                  <div className="col-6">
-                                    <small className="text-muted">Quantity:</small>
-                                    <div className="fw-medium">{item.quantity}</div>
-                                  </div>
-                                  <div className="col-6 text-end">
-                                    <small className="text-muted">Price:</small>
-                                    <div className="fw-semibold text-primary">
-                                      KSh {(item.price * item.quantity).toFixed(2)}
+                        <div>
+                          <h4 className="mb-1 fw-semibold">Customer Information</h4>
+                          <p className="text-muted mb-0 small">Please provide your details</p>
+                        </div>
+                      </div>
+                      <div className="row g-3">
+                        <div className="col-md-12">
+                          <label className="form-label fw-medium">Group Name</label>
+                          <select
+                            className="form-select form-select-lg"
+                            value={selectedGroupId || ""}
+                            onChange={(e) => handleGroupSelect(e.target.value)}
+                          >
+                            <option value="">Select a Group</option>
+                            {groups.map((group) => (
+                              <option key={group.id} value={group.id}>
+                                {group.groupName || group.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-12">
+                          <label className="form-label fw-medium">Client</label>
+                          <select
+                            className="form-select form-select-lg"
+                            value={selectedClientId || ""}
+                            onChange={(e) => handleClientSelect(e.target.value)}
+                            disabled={!selectedGroupId}
+                          >
+                            <option value="">Select a Client</option>
+                            {clients.map((client) => (
+                              <option key={client.id} value={client.id}>
+                                {client.fullName} ({client.clientNumber})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-6">
+                          <label className="form-label fw-medium">First Name</label>
+                          <input
+                            type="text"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                            className="form-control form-control-lg"
+                            placeholder="John"
+                            readOnly
+                          />
+                        </div>
+                        <div className="col-md-6">
+                          <label className="form-label fw-medium">Last Name</label>
+                          <input
+                            type="text"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            className="form-control form-control-lg"
+                            placeholder="Doe"
+                            readOnly
+                          />
+                        </div>
+                        <div className="col-md-6">
+                          <label className="form-label fw-medium">Branch</label>
+                          <input
+                            type="text"
+                            name="branchName"
+                            value={formData.branchName}
+                            className="form-control form-control-lg"
+                            placeholder="Main Branch"
+                            readOnly
+                          />
+                        </div>
+                        <div className="col-md-6">
+                          <label className="form-label fw-medium">Phone Number</label>
+                          <input
+                            type="tel"
+                            name="phoneNumber"
+                            value={formData.phoneNumber}
+                            onChange={handleChange}
+                            className="form-control form-control-lg"
+                            placeholder="+254 700 000 000"
+                            readOnly
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="card mb-4 border-0 shadow-sm">
+                    <div className="card-body p-4">
+                      <div className="d-flex align-items-center mb-4">
+                        <div className="bg-success bg-opacity-10 rounded-3 p-2 me-3">
+                          <Truck className="text-success" size={24} />
+                        </div>
+                        <div>
+                          <h4 className="mb-1 fw-semibold">Additional Information</h4>
+                          <p className="text-muted mb-0 small">Loan and group details</p>
+                        </div>
+                      </div>
+                      <div className="row g-3">
+                        <div className="col-md-6">
+                          <label className="form-label fw-medium">Location</label>
+                          <input
+                            type="text"
+                            name="location"
+                            value={formData.location}
+                            onChange={handleChange}
+                            className="form-control form-control-lg"
+                            placeholder="Nairobi, Kenya"
+                          />
+                        </div>
+                        <div className="col-md-6">
+                          <label className="form-label fw-medium">Credit Officer</label>
+                          <input
+                            type="text"
+                            name="creditOfficerName"
+                            value={formData.creditOfficerName}
+                            className="form-control form-control-lg"
+                            readOnly
+                            style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="card border-0 shadow-sm">
+                    <div className="card-body p-4">
+                      <div className="d-flex align-items-center mb-4">
+                        <div className="bg-info bg-opacity-10 rounded-3 p-2 me-3">
+                          <ShoppingCart className="text-info" size={24} />
+                        </div>
+                        <div>
+                          <h4 className="mb-1 fw-semibold">Order Products</h4>
+                          <p className="text-muted mb-0 small">Review your selected items</p>
+                        </div>
+                      </div>
+                      <div className="mb-4">
+                        {orderSummary.items.length === 0 ? (
+                          <div className="text-center py-4">
+                            <p className="text-muted">Your cart is empty. Please add products to continue.</p>
+                          </div>
+                        ) : (
+                          orderSummary.items.map(item => (
+                            <div key={item.id} className="border rounded-3 p-3 mb-3">
+                              <div className="d-flex align-items-start">
+                                <img 
+                                  src={item.image} 
+                                  alt={item.name} 
+                                  className="me-3 rounded" 
+                                  style={{ width: '80px', height: '80px', objectFit: 'cover' }} 
+                                />
+                                <div className="flex-grow-1">
+                                  <h6 className="fw-semibold mb-2">{item.name}</h6>
+                                  <p className="text-muted small mb-2">{item.description || "Product description"}</p>
+                                  <div className="row">
+                                    <div className="col-6">
+                                      <small className="text-muted">Quantity:</small>
+                                      <div className="fw-medium">{item.quantity}</div>
+                                    </div>
+                                    <div className="col-6 text-end">
+                                      <small className="text-muted">Price:</small>
+                                      <div className="fw-semibold text-primary">
+                                        KSh {(item.price * item.quantity).toFixed(2)}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    <div className="alert alert-success d-flex align-items-center mb-0" role="alert">
-                      <Shield className="me-2 text-success" size={20} />
-                      <div className="small">Your information is secure and protected</div>
+                          ))
+                        )}
+                      </div>
+                      <div className="alert alert-success d-flex align-items-center mb-0" role="alert">
+                        <Shield className="me-2 text-success" size={20} />
+                        <div className="small">Your information is secure and protected</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="col-lg-4">
-                <div className="card border-0 shadow-sm sticky-top" style={{ top: '20px' }}>
-                  <div className="card-body p-4">
-                    <div className="d-flex align-items-center mb-4">
-                      <div className="bg-info bg-opacity-10 rounded-3 p-2 me-3">
-                        <ShoppingCart className="text-info" size={24} />
+                <div className="col-lg-4">
+                  <div className="card border-0 shadow-sm sticky-top" style={{ top: '20px' }}>
+                    <div className="card-body p-4">
+                      <div className="d-flex align-items-center mb-4">
+                        <div className="bg-info bg-opacity-10 rounded-3 p-2 me-3">
+                          <ShoppingCart className="text-info" size={24} />
+                        </div>
+                        <h4 className="mb-0 fw-semibold">Order Summary</h4>
                       </div>
-                      <h4 className="mb-0 fw-semibold">Order Summary</h4>
-                    </div>
-
-                    <div className="mb-4">
-                      <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded-3">
-                        <span className="fw-medium">Items in Cart</span>
-                        <span className="badge bg-primary">{orderSummary.items.length}</span>
+                      <div className="mb-4">
+                        <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded-3">
+                          <span className="fw-medium">Items in Cart</span>
+                          <span className="badge bg-primary">{orderSummary.items.length}</span>
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <div className="d-flex justify-content-between mb-2 text-muted">
-                        <span>Subtotal</span>
-                        <span>KSh {orderSummary.subtotal.toFixed(2)}</span>
+                      <div className="mb-4">
+                        <div className="d-flex justify-content-between mb-2 text-muted">
+                          <span>Subtotal</span>
+                          <span>KSh {orderSummary.subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="d-flex justify-content-between mb-2 text-muted">
+                          <span>Shipping</span>
+                          <span>KSh {orderSummary.shipping.toFixed(2)}</span>
+                        </div>
+                        <div className="d-flex justify-content-between mb-3 text-muted">
+                          <span>Tax</span>
+                          <span>KSh {orderSummary.tax.toFixed(2)}</span>
+                        </div>
+                        <hr />
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span className="fs-5 fw-semibold">Total</span>
+                          <span className="fs-4 fw-bold text-primary">
+                            KSh {orderSummary.total.toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="d-flex justify-content-between mb-2 text-muted">
-                        <span>Shipping</span>
-                        <span>KSh {orderSummary.shipping.toFixed(2)}</span>
-                      </div>
-                      <div className="d-flex justify-content-between mb-3 text-muted">
-                        <span>Tax</span>
-                        <span>KSh {orderSummary.tax.toFixed(2)}</span>
-                      </div>
-                      <hr />
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="fs-5 fw-semibold">Total</span>
-                        <span className="fs-4 fw-bold text-primary">
-                          KSh {orderSummary.total.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleSubmit}
-                      disabled={isProcessing || orderSummary.items.length === 0}
-                      className="btn btn-primary btn-lg w-100 py-3 d-flex align-items-center justify-content-center"
-                    >
-                      {isProcessing ? (
-                        <div className="d-flex align-items-center">
-                          <div className="spinner-border spinner-border-sm me-2" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                          </div>
-                          Processing...
+                      {loanLimitError ? (
+                        <div className="alert alert-danger text-center" role="alert">
+                          <p className="mb-0 fw-bold">{loanLimitError}</p>
                         </div>
                       ) : (
-                        <>
-                          <Lock className="me-2" size={20} />
-                          Place Order
-                        </>
+                        <button
+                          onClick={handleSubmit}
+                          disabled={isProcessing || orderSummary.items.length === 0}
+                          className="btn btn-primary btn-lg w-100 py-3 d-flex align-items-center justify-content-center"
+                        >
+                          {isProcessing ? (
+                            <div className="d-flex align-items-center">
+                              <div className="spinner-border spinner-border-sm me-2" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                              </div>
+                              Processing...
+                            </div>
+                          ) : (
+                            <>
+                              <Lock className="me-2" size={20} />
+                              Place Order
+                            </>
+                          )}
+                        </button>
                       )}
-                    </button>
-                    <p className="text-muted text-center mt-3 small">
-                      By placing your order, you agree to our Terms of Service and Privacy Policy
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       </div>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      <ErrorModal
+        message={loanLimitError}
+        onClose={handleCloseErrorModal}
+      />
       <style>{`
+        .modal-backdrop-custom {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(8px);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1050;
+          animation: fadeIn 0.3s ease-out;
+        }
+        .modal-dialog-custom {
+          max-width: 900px;
+          margin: 1.75rem auto;
+          position: relative;
+          pointer-events: none;
+          animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .modal-content-custom {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          background-color: var(--bs-body-bg);
+          background-clip: padding-box;
+          border: 1px solid rgba(0, 0, 0, 0.2);
+          border-radius: 0.5rem;
+          outline: 0;
+          pointer-events: auto;
+        }
+        .modal-header-custom {
+          padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .modal-body-custom {
+          padding: 1.5rem;
+        }
+        .btn-close-custom {
+          background: none;
+          border: none;
+          cursor: pointer;
+          opacity: 0.8;
+          transition: opacity 0.2s ease;
+        }
+        .btn-close-custom:hover {
+          opacity: 1;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideIn {
+          from { transform: translateY(-30px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
         .skeleton {
           background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
           background-size: 200% 100%;
           animation: loading 1.5s infinite;
           border-radius: 4px;
         }
-        
         @keyframes loading {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
-        
         .bg-light {
           background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
         }
@@ -851,7 +902,7 @@ const Checkout = () => {
           position: sticky !important;
         }
       `}</style>
-    </div>
+    </>
   );
 };
 

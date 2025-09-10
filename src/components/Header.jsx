@@ -5,7 +5,7 @@ import {
   Home, Package, Grid3x3, Phone, Mail, Truck, Shield,
   LogIn, UserPlus, Settings, Package2, MapPin, LogOut
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
@@ -21,6 +21,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { cartCount, wishlistCount } = useCart();
   
   // Get both user and admin contexts
@@ -128,6 +129,7 @@ const Header = () => {
     setHoveredCategory(null);
   };
 
+  // Updated search handler to correctly pass the query in the URL
   const handleSearch = (e) => {
     e.preventDefault();
     const trimmedQuery = searchQuery.trim();
@@ -144,13 +146,6 @@ const Header = () => {
     }
   };
   
-  // No longer needed since we are using the Link's `to` prop directly
-  // const handleSubCategoryClick = (categorySlug, subCategorySlug) => {
-  //   const path = `/products?category=${encodeURIComponent(categorySlug)}&subcategory=${encodeURIComponent(subCategorySlug)}`;
-  //   navigate(path);
-  //   closeSidebar();
-  // };
-
   const getUserDisplayName = () => {
     if (!user) return 'Welcome!';
     
@@ -386,10 +381,6 @@ const Header = () => {
                 <Link to="/login" className="btn btn-primary btn-sm flex-fill" onClick={closeSidebar}>
                   <LogIn size={16} className="me-1" />
                   Login
-                </Link>
-                <Link to="/register" className="btn btn-outline-primary btn-sm flex-fill" onClick={closeSidebar}>
-                  <UserPlus size={16} className="me-1" />
-                  Register
                 </Link>
               </div>
             )}
@@ -716,12 +707,12 @@ const Header = () => {
                           My Orders
                         </Link>
                       </li>
-                      <li>
+                      {/* <li>
                         <Link className="dropdown-item py-2" to="/account">
                           <Settings size={16} className="me-2" />
                           Account Settings
                         </Link>
-                      </li>
+                      </li> */}
                       <li><hr className="dropdown-divider" /></li>
                       <li>
                         <button className="dropdown-item py-2 w-100 text-start border-0 bg-transparent" onClick={handleLogout}>
@@ -738,12 +729,6 @@ const Header = () => {
                           Login
                         </Link>
                       </li>
-                      <li>
-                        <Link className="dropdown-item py-2" to="/register">
-                          <UserPlus size={16} className="me-2" />
-                          Register
-                        </Link>
-                      </li>
                       <li><hr className="dropdown-divider" /></li>
                       <li>
                         <Link className="dropdown-item py-2" to="/orders">
@@ -751,12 +736,12 @@ const Header = () => {
                           My Orders
                         </Link>
                       </li>
-                      <li>
+                      {/* <li>
                         <Link className="dropdown-item py-2" to="/account">
                           <Settings size={16} className="me-2" />
                           Account Settings
                         </Link>
-                      </li>
+                      </li> */}
                     </>
                   )}
                 </ul>
