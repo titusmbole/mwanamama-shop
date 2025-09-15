@@ -38,6 +38,7 @@ const Products = () => {
   const navigate = useNavigate();
 
   const authToken = adminToken || (user?.token || localStorage.getItem('userToken'));
+  const isLoggedIn = !!authToken;
 
   const [allProducts, setAllProducts] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
@@ -201,36 +202,47 @@ const Products = () => {
     return uniqueProducts;
   }, []);
 
-  // Fetch all products with pagination
+  // UPDATED: Fetch all products - different endpoints based on login status
   const fetchAllProducts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      if (!authToken) {
-        throw new Error("Authentication required. Please log in to view products.");
+
+      // Determine which endpoint to use based on login status
+      const endpoint = isLoggedIn 
+        ? `${BASE_URL}/products/list` 
+        : `${BASE_URL}/products/list/all/for/ecommerce`;
+
+      // Create headers object - only add Authorization if logged in
+      const headers = {};
+      if (isLoggedIn && authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
       }
       
-      const response = await axios.get(`${BASE_URL}/products/list`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-        params: {
-          size: 200, // Fetch a larger batch to improve local search
+      const response = await axios.get(endpoint, {
+        headers: headers,
+        params: isLoggedIn ? {
+          size: 200,
           sortBy: 'id',
           sortDirection: 'ASC'
-        }
+        } : {} // No params needed for public endpoint
       });
       
       const transformed = transformAndAugmentProducts(response.data);
       setAllProducts(transformed);
       
     } catch (err) {
-      setError(err.message || "Failed to fetch products. Please try again later.");
+      // More specific error handling
+      if (err.response && err.response.status === 401) {
+        setError("Authentication failed. Please try logging in again.");
+      } else {
+        setError(err.message || "Failed to fetch products. Please try again later.");
+      }
       console.error("Error fetching products:", err);
     } finally {
       setLoading(false);
     }
-  }, [authToken, transformAndAugmentProducts]);
+  }, [authToken, isLoggedIn, transformAndAugmentProducts]);
 
   // Search products via local filtering (debounced)
   const searchProducts = useCallback((query) => {
@@ -259,10 +271,10 @@ const Products = () => {
     return () => clearTimeout(searchTimeout);
   }, [searchQuery, searchProducts]);
 
-  // Initial fetch on component mount and on manual refresh
+  // UPDATED: Always fetch products, regardless of login status
   useEffect(() => {
     fetchAllProducts();
-  }, [authToken, refreshKey, fetchAllProducts]);
+  }, [fetchAllProducts, refreshKey]);
   
   // Create categorized products with exactly 12 products per section
   const categorizedProducts = useMemo(() => {
@@ -319,17 +331,24 @@ const Products = () => {
       );
     }
 
-    baseProducts = baseProducts.filter(product => {
-      const productPrice = product.price;
-      return productPrice >= minPrice && productPrice <= maxPrice;
-    });
+    // UPDATED: Only apply price filtering if user is logged in and can see prices
+    if (isLoggedIn) {
+      baseProducts = baseProducts.filter(product => {
+        const productPrice = product.price;
+        return productPrice >= minPrice && productPrice <= maxPrice;
+      });
+    }
 
     switch (sortOrder) {
       case 'price-asc':
-        baseProducts.sort((a, b) => a.price - b.price);
+        if (isLoggedIn) {
+          baseProducts.sort((a, b) => a.price - b.price);
+        }
         break;
       case 'price-desc':
-        baseProducts.sort((a, b) => b.price - a.price);
+        if (isLoggedIn) {
+          baseProducts.sort((a, b) => b.price - a.price);
+        }
         break;
       case 'rating-desc':
         baseProducts.sort((a, b) => b.rating - a.rating);
@@ -342,7 +361,7 @@ const Products = () => {
     }
     
     return baseProducts;
-  }, [categorizedProducts, sortOrder, minPrice, maxPrice, searchQuery, searchResults, location.search]);
+  }, [categorizedProducts, sortOrder, minPrice, maxPrice, searchQuery, searchResults, location.search, isLoggedIn]);
 
   const handleViewProductDetails = (product) => {
     setSelectedProduct(product);
@@ -404,7 +423,12 @@ const Products = () => {
         </div>
         <div className="text-center py-5">
           <p className="mt-3 h5">Loading all products...</p>
-          <small className="text-muted">Fetching all available products to enable local search and filtering.</small>
+          <small className="text-muted">
+            {isLoggedIn 
+              ? "Fetching all available products with pricing information..." 
+              : "Fetching all available products..."
+            }
+          </small>
         </div>
       </div>
     );
@@ -455,26 +479,23 @@ const Products = () => {
             top: 50%;
             transform: translateY(-50%);
             z-index: 10;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-            border-radius: 50%;
             height: 40px;
             width: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: white;
-            border: 1px solid #dee2e6;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Added subtle shadow */
             cursor: pointer;
           }
-          .carousel-nav-btn:hover {
-            opacity: 1;
-          }
           .carousel-nav-btn.prev {
-            left: 0;
+            left: 1rem;
           }
           .carousel-nav-btn.next {
-            right: 0;
+            right: 1rem;
+          }
+          .carousel-nav-btn svg {
+            color: white; /* Changed icon color to white for contrast */
           }
           .product-grid-container {
             display: grid;
@@ -521,6 +542,17 @@ const Products = () => {
         `}
       </style>
       <div className="container-fluid py-4 px-1">
+        {/* UPDATED: Show login notice for non-logged in users */}
+        {!isLoggedIn && (
+          <div className="alert alert-info text-center mb-4">
+            <h6 className="mb-2">Browse Our Products</h6>
+            <p className="mb-0">
+              <Link to="/login" className="alert-link fw-bold">Log in</Link>
+              
+            </p>
+          </div>
+        )}
+
         {/* Search, Filter, and View Controls */}
         <div className="bg-light p-2 rounded-3 mb-4">
           <div className="row align-items-center">
@@ -587,59 +619,66 @@ const Products = () => {
                   </button>
                   <ul className="dropdown-menu dropdown-menu-end shadow" aria-labelledby="sortDropdown">
                     <li><h6 className="dropdown-header">Sort by</h6></li>
-                    <li><button className={`dropdown-item ${sortOrder === 'default' ? 'active' : ''}`} onClick={() => setSortOrder('default')}>Default</button></li>
-                    <li><button className={`dropdown-item ${sortOrder === 'price-asc' ? 'active' : ''}`} onClick={() => setSortOrder('price-asc')}>Price: Low to High</button></li>
-                    <li><button className={`dropdown-item ${sortOrder === 'price-desc' ? 'active' : ''}`} onClick={() => setSortOrder('price-desc')}>Price: High to Low</button></li>
+                    {/* UPDATED: Only show price sorting options if logged in */}
+                    {isLoggedIn && (
+                      <>
+                        <li><button className={`dropdown-item ${sortOrder === 'price-asc' ? 'active' : ''}`} onClick={() => setSortOrder('price-asc')}>Price: Low to High</button></li>
+                        <li><button className={`dropdown-item ${sortOrder === 'price-desc' ? 'active' : ''}`} onClick={() => setSortOrder('price-desc')}>Price: High to Low</button></li>
+                      </>
+                    )}
                     <li><button className={`dropdown-item ${sortOrder === 'rating-desc' ? 'active' : ''}`} onClick={() => setSortOrder('rating-desc')}>Rating: High to Low</button></li>
                     <li><button className={`dropdown-item ${sortOrder === 'name-asc' ? 'active' : ''}`} onClick={() => setSortOrder('name-asc')}>Name: A to Z</button></li>
                   </ul>
                 </div>
                 
-                <div className="dropdown">
-                  <button
-                    className="btn btn-outline-primary dropdown-toggle d-flex align-items-center"
-                    type="button"
-                    id="filterDropdown"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    style={{ borderRadius: '25px' }}
-                  >
-                    <SlidersHorizontal size={18} className="me-2" />
-                    Filter
-                  </button>
-                  <div className="dropdown-menu dropdown-menu-end p-3 shadow" style={{ minWidth: '280px' }}>
-                    <h6 className="dropdown-header px-0 mb-3">Price Range (KSh)</h6>
-                    <div className="d-flex align-items-center justify-content-between mb-3 gap-2">
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        placeholder="Min Price"
-                        value={minPrice}
-                        onChange={(e) => setMinPrice(Number(e.target.value))}
-                      />
-                      <span className="fw-bold">-</span>
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        placeholder="Max Price"
-                        value={maxPrice}
-                        onChange={(e) => setMaxPrice(Number(e.target.value))}
-                      />
-                    </div>
-                    <div className="d-flex gap-2">
-                      <button 
-                        className="btn btn-outline-secondary btn-sm flex-grow-1"
-                        onClick={() => {
-                          setMinPrice(0);
-                          setMaxPrice(25000);
-                        }}
-                      >
-                        Reset
-                      </button>
-                      <button className="btn btn-primary btn-sm flex-grow-1">Apply</button>
+                {/* UPDATED: Only show price filter if logged in */}
+                {isLoggedIn && (
+                  <div className="dropdown">
+                    <button
+                      className="btn btn-outline-primary dropdown-toggle d-flex align-items-center"
+                      type="button"
+                      id="filterDropdown"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      style={{ borderRadius: '25px' }}
+                    >
+                      <SlidersHorizontal size={18} className="me-2" />
+                      Filter
+                    </button>
+                    <div className="dropdown-menu dropdown-menu-end p-3 shadow" style={{ minWidth: '280px' }}>
+                      <h6 className="dropdown-header px-0 mb-3">Price Range (KSh)</h6>
+                      <div className="d-flex align-items-center justify-content-between mb-3 gap-2">
+                        <input
+                          type="number"
+                          className="form-control form-control-sm"
+                          placeholder="Min Price"
+                          value={minPrice}
+                          onChange={(e) => setMinPrice(Number(e.target.value))}
+                        />
+                        <span className="fw-bold">-</span>
+                        <input
+                          type="number"
+                          className="form-control form-control-sm"
+                          placeholder="Max Price"
+                          value={maxPrice}
+                          onChange={(e) => setMaxPrice(Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="d-flex gap-2">
+                        <button 
+                          className="btn btn-outline-secondary btn-sm flex-grow-1"
+                          onClick={() => {
+                            setMinPrice(0);
+                            setMaxPrice(25000);
+                          }}
+                        >
+                          Reset
+                        </button>
+                        <button className="btn btn-primary btn-sm flex-grow-1">Apply</button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <button 
                   className="btn btn-outline-success"
@@ -705,6 +744,7 @@ const Products = () => {
                           toggleWishlist={() => handleToggleWishlist(product)}
                           cartItems={cartItems}
                           wishlistItems={wishlistItems}
+                          showPrice={isLoggedIn}
                         />
                       ) : (
                         <ProductListCard
@@ -714,6 +754,7 @@ const Products = () => {
                           toggleWishlist={() => handleToggleWishlist(product)}
                           cartItems={cartItems}
                           wishlistItems={wishlistItems}
+                          showPrice={isLoggedIn}
                         />
                       )}
                     </div>
@@ -723,7 +764,7 @@ const Products = () => {
                 {/* Previous Button */}
                 {(sectionPages[section] || 0) > 0 && (
                   <button 
-                    className="btn btn-light carousel-nav-btn prev shadow-sm"
+                    className="btn btn-primary carousel-nav-btn prev"
                     onClick={() => handleSectionPrev(section)}
                   >
                     <ChevronLeft size={24} />
@@ -733,7 +774,7 @@ const Products = () => {
                 {/* Next Button */}
                 {hasMore && (
                   <button 
-                    className="btn btn-light carousel-nav-btn next shadow-sm"
+                    className="btn btn-primary carousel-nav-btn next"
                     onClick={() => handleSectionNext(section)}
                   >
                     <ChevronRight size={24} />
@@ -787,7 +828,12 @@ const Products = () => {
                     </div>
                     <p className="text-muted">{selectedProduct.description}</p>
                     <div className="mb-3">
-                      <span className="h4 text-primary">KSh {selectedProduct.price.toLocaleString()}</span>
+                      {/* UPDATED: Conditional price display in quick view modal */}
+                      {isLoggedIn ? (
+                        <span className="h4 text-primary">KSh {selectedProduct.price.toLocaleString()}</span>
+                      ) : (
+                        <span className="text-muted">Log in to see price</span>
+                      )}
                     </div>
                     <div className="mb-3">
                       <strong>Brand:</strong> {selectedProduct.brandName}<br/>
@@ -795,13 +841,23 @@ const Products = () => {
                       <strong>Stock:</strong> {selectedProduct.availableStock > 0 ? `${selectedProduct.availableStock} available` : 'Out of stock'}
                     </div>
                     <div className="d-flex gap-2">
-                      <button 
-                        className="btn btn-primary flex-grow-1"
-                        onClick={() => handleQuickViewAddToCart(selectedProduct)}
-                        disabled={!selectedProduct.inStock}
-                      >
-                        Add to Cart
-                      </button>
+                      {/* UPDATED: Only show Add to Cart if logged in */}
+                      {isLoggedIn ? (
+                        <button 
+                          className="btn btn-primary flex-grow-1"
+                          onClick={() => handleQuickViewAddToCart(selectedProduct)}
+                          disabled={!selectedProduct.inStock}
+                        >
+                          Add to Cart
+                        </button>
+                      ) : (
+                        <Link 
+                          to="/login" 
+                          className="btn btn-primary flex-grow-1 text-center text-decoration-none"
+                        >
+                          Login to Purchase
+                        </Link>
+                      )}
                       <button 
                         className="btn btn-outline-primary"
                         onClick={() => handleQuickViewToggleWishlist(selectedProduct)}

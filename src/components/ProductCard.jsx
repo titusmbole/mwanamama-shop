@@ -11,10 +11,10 @@ const ProductCard = ({
   addToCart, 
   toggleWishlist, 
   cartItems, 
-  wishlistItems 
+  wishlistItems,
+  showPrice // This is the key prop
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  // NEW: State to track if the image has failed to load
   const [hasError, setHasError] = useState(false);
 
   // Determine the product's state based on the props
@@ -30,7 +30,6 @@ const ProductCard = ({
   // Use the image from props, or the placeholder as a fallback
   const productImage = product.image || product.imageUrl || PLACEHOLDER_IMAGE_URL;
 
-  // UPDATED: The onError handler now sets the state.
   const handleImageError = () => {
     setHasError(true);
   };
@@ -77,7 +76,6 @@ const ProductCard = ({
         </button>
 
         <div className="position-relative overflow-hidden" onClick={() => onViewDetails(product)}>
-          {/* NEW: Conditional render based on the hasError state */}
           {hasError ? (
             <div 
               className="card-img-top d-flex align-items-center justify-content-center bg-light"
@@ -92,7 +90,7 @@ const ProductCard = ({
               src={productImage}
               className="card-img-top"
               alt={productName}
-              onError={handleImageError} // This is where the magic happens
+              onError={handleImageError}
               style={{
                 height: '180px',
                 objectFit: 'cover',
@@ -156,9 +154,13 @@ const ProductCard = ({
 
           <div className="mt-auto">
             <div className="mb-2">
-              <span className="h6 fw-bold mb-0" style={{color: '#667eea', fontSize: '14px'}}>
-                KSh {productPrice.toLocaleString()}
-              </span>
+              {showPrice ? (
+                <span className="h6 fw-bold mb-0" style={{color: '#667eea', fontSize: '14px'}}>
+                  KSh {productPrice.toLocaleString()}
+                </span>
+              ) : (
+                <small className="text-muted fst-italic"></small>
+              )}
               {product.originalPrice && product.originalPrice > productPrice && (
                 <>
                   <span className="text-muted text-decoration-line-through small ms-2" style={{ fontSize: '11px' }}>

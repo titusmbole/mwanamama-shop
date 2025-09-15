@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { ShoppingCart, Heart, Eye, Star } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 
-const ProductListCard = ({ product, onViewDetails, onShowToast }) => {
+const ProductListCard = ({ product, onViewDetails, onShowToast, showPrice }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { addToCart, toggleWishlist, wishlistItems } = useCart();
@@ -178,9 +178,14 @@ const ProductListCard = ({ product, onViewDetails, onShowToast }) => {
         <div className="col-md-3 col-lg-3">
           <div className="card-body d-flex flex-column justify-content-between h-100">
             <div className="text-end mb-3">
-              <span className="h4 fw-bold" style={{color: '#667eea'}}>
-                KSh {productPrice.toLocaleString()}
-              </span>
+              {/* UPDATED: Conditional rendering of the price */}
+              {showPrice ? (
+                <span className="h4 fw-bold" style={{color: '#667eea'}}>
+                  KSh {productPrice.toLocaleString()}
+                </span>
+              ) : (
+                <small className="text-muted fst-italic">Log in to see price</small>
+              )}
               
               {product.inStock === false && (
                 <div className="mt-2">

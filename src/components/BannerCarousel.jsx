@@ -1,3 +1,4 @@
+// src/components/BannerCarousel.jsx
 // Enhanced BannerCarousel component with shopping functionality and skeleton loader
 
 import React, { useState, useEffect } from 'react';
@@ -141,7 +142,7 @@ const SkeletonLoader = () => {
 // --- End Skeleton Loader Component ---
 
 // --- New Modal Component ---
-const ProductDetailsModal = ({ product, onClose, onAddToCart }) => {
+const ProductDetailsModal = ({ product, onClose, onAddToCart, showPrice }) => {
   if (!product) return null;
 
   return (
@@ -157,12 +158,21 @@ const ProductDetailsModal = ({ product, onClose, onAddToCart }) => {
           <div className="modal-body-custom p-4">
             <div className="row g-4">
               <div className="col-md-6 d-flex justify-content-center align-items-center">
-                <div 
-                  className="rounded-4 overflow-hidden shadow-sm"
-                  style={{ width: '100%', maxWidth: '400px', height: 'auto', aspectRatio: '1 / 1' }}
-                >
-                  <img src={product.image} alt={product.title} className="w-100 h-100 object-fit-cover" />
-                </div>
+                {showPrice ? (
+                  <div 
+                    className="rounded-4 overflow-hidden shadow-sm"
+                    style={{ width: '100%', maxWidth: '400px', height: 'auto', aspectRatio: '1 / 1' }}
+                  >
+                    <img src={product.image} alt={product.title} className="w-100 h-100 object-fit-cover" />
+                  </div>
+                ) : (
+                  <div 
+                    className="rounded-4 overflow-hidden shadow-sm d-flex align-items-center justify-content-center bg-light text-muted p-4"
+                    style={{ width: '100%', maxWidth: '400px', height: 'auto', aspectRatio: '1 / 1' }}
+                  >
+                    Image available after login
+                  </div>
+                )}
               </div>
               <div className="col-md-6">
                 <div className="d-flex align-items-center mb-2">
@@ -187,7 +197,11 @@ const ProductDetailsModal = ({ product, onClose, onAddToCart }) => {
                 <p className="text-muted mb-4">{product.description}</p>
                 
                 <div className="mb-4">
-                  <h3 className="h2 fw-bold text-success">KSh {product.unitPrice.toLocaleString()}</h3>
+                  {showPrice ? (
+                    <h3 className="h2 fw-bold text-success">KSh {product.unitPrice.toLocaleString()}</h3>
+                  ) : (
+                    <small className="text-muted fst-italic">Log in to see price</small>
+                  )}
                   <div className="mt-2">
                     <span className={`badge ${product.inStock ? 'bg-success' : 'bg-danger'} fw-normal`}>
                       {product.inStock ? `${product.stockCount} in stock` : 'Out of stock'}
@@ -242,10 +256,9 @@ const BannerCarousel = ({ onViewDetails }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  
-  // --- New State for Modal ---
+  const [showPrice, setShowPrice] = useState(false); 
+
   const [modalProduct, setModalProduct] = useState(null);
-  // --- End New State for Modal ---
 
   const { addToCart } = useCart();
 
@@ -269,23 +282,67 @@ const BannerCarousel = ({ onViewDetails }) => {
     return localStorage.getItem('adminToken') || localStorage.getItem('token') || localStorage.getItem('authToken');
   };
 
+  const getFallbackProducts = () => {
+    return [
+      {
+        id: 1,
+        image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=600&fit=crop',
+        title: 'Premium Wireless Headphones',
+        subtitle: 'NEW ARRIVAL',
+        description: 'Experience crystal-clear audio with our premium wireless headphones featuring noise cancellation.',
+        cta: 'Shop Now',
+        gradient: gradients[0],
+        unitPrice: 299.99,
+        rating: 4.8,
+        reviews: 456,
+        category: 'Electronics',
+        brandName: 'AudioTech',
+        inStock: true,
+        stockCount: 25,
+        name: 'Premium Wireless Headphones',
+        price: 299.99
+      },
+      {
+        id: 2,
+        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop',
+        title: 'Smart Watch Pro',
+        subtitle: 'NEW ARRIVAL',
+        description: 'Stay connected and track your fitness with advanced health monitoring features.',
+        cta: 'Shop Now',
+        gradient: gradients[1],
+        unitPrice: 399.99,
+        rating: 4.6,
+        reviews: 324,
+        category: 'Electronics',
+        brandName: 'TechPro',
+        inStock: true,
+        stockCount: 15,
+        name: 'Smart Watch Pro',
+        price: 399.99
+      }
+    ];
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
-        setLoading(true);
         const authToken = getAuthToken();
+        const isLoggedIn = !!authToken; 
+        setShowPrice(isLoggedIn); 
 
-        if (!authToken) {
-          setError("Authentication required to load products.");
-          setLoading(false);
-          return;
-        }
+        // Conditional API endpoint based on login status
+        const apiUrl = isLoggedIn 
+          ? 'https://api.mwanamama.org/api/v1/products/list' 
+          : 'https://api.mwanamama.org/api/v1/products/list/all/for/ecommerce';
 
-        const response = await axios.get('https://api.mwanamama.org/api/v1/products/list', {
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          }
-        });
+        const config = isLoggedIn ? {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        } : {};
+
+        const response = await axios.get(apiUrl, config);
 
         let productsArray;
         if (response.data.content && Array.isArray(response.data.content)) {
@@ -307,41 +364,19 @@ const BannerCarousel = ({ onViewDetails }) => {
         );
 
         if (productsWithImages.length === 0) {
-          throw new Error('No products with images found');
+          throw new Error('No products with images found to display from API. Using fallback data.');
         }
 
-        // --- Start of corrected logic for 5 random products ---
-        // Shuffle the entire array of products with images
         const shuffledProducts = productsWithImages.sort(() => 0.5 - Math.random());
-
-        // Always try to get exactly 5 products
         let selectedProducts;
         if (shuffledProducts.length >= 5) {
-          // If we have 5 or more products, take exactly 5
           selectedProducts = shuffledProducts.slice(0, 5);
         } else {
-          // If we have fewer than 5, we'll need to repeat some products
-          selectedProducts = [];
-          const availableProducts = [...shuffledProducts];
-          
-          // Fill up to 5 products by repeating the available ones
-          for (let i = 0; i < 5; i++) {
-            if (availableProducts.length === 0) {
-              // If somehow we have no products at all, break
-              break;
-            }
-            
-            // Add the next product (cycling through available products)
-            selectedProducts.push(availableProducts[i % availableProducts.length]);
-          }
+          selectedProducts = [...shuffledProducts];
         }
 
-        // Now selectedProducts should always have exactly 5 products (or fewer only if no products exist)
-        const productsToDisplay = selectedProducts;
-        // --- End of corrected logic ---
-
-        const bannerData = productsToDisplay.map((product, index) => {
-          const originalPrice = parseFloat(product.unitPrice || 0);
+        const bannerData = selectedProducts.map((product, index) => {
+          const originalPrice = parseFloat(product.unitPrice || product.price || 0);
 
           return {
             id: product.id,
@@ -366,59 +401,20 @@ const BannerCarousel = ({ onViewDetails }) => {
         });
 
         setBanners(bannerData);
-        setError(null);
       } catch (err) {
         console.error('Error fetching products:', err);
-        setError('Failed to load products');
-        
-        // Fallback to sample data
-        setBanners([
-          {
-            id: 1,
-            image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=600&fit=crop',
-            title: 'Premium Wireless Headphones',
-            subtitle: 'NEW ARRIVAL',
-            description: 'Experience crystal-clear audio with our premium wireless headphones featuring noise cancellation.',
-            cta: 'Shop Now',
-            gradient: gradients[0],
-            unitPrice: 299.99,
-            rating: 4.8,
-            reviews: 456,
-            category: 'Electronics',
-            brandName: 'AudioTech',
-            inStock: true,
-            stockCount: 25,
-            name: 'Premium Wireless Headphones',
-            price: 299.99
-          },
-          {
-            id: 2,
-            image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop',
-            title: 'Smart Watch Pro',
-            subtitle: 'NEW ARRIVAL',
-            description: 'Stay connected and track your fitness with advanced health monitoring features.',
-            cta: 'Shop Now',
-            gradient: gradients[1],
-            unitPrice: 399.99,
-            rating: 4.6,
-            reviews: 324,
-            category: 'Electronics',
-            brandName: 'TechPro',
-            inStock: true,
-            stockCount: 15,
-            name: 'Smart Watch Pro',
-            price: 399.99
-          }
-        ]);
+        setError('Failed to load products. Displaying fallback data.');
+        setBanners(getFallbackProducts());
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, []);
+  }, []); 
 
   const handleShopNow = async () => {
+    const currentBanner = banners[current];
     if (isAddingToCart || !currentBanner.inStock) return;
 
     setIsAddingToCart(true);
@@ -475,9 +471,8 @@ const BannerCarousel = ({ onViewDetails }) => {
     }
   };
 
-  // --- Updated handleLearnMore to show modal ---
   const handleLearnMore = () => {
-    setModalProduct(currentBanner);
+    setModalProduct(banners[current]);
   };
 
   const handleCloseModal = () => {
@@ -511,7 +506,6 @@ const BannerCarousel = ({ onViewDetails }) => {
         toast.error('Failed to add item to cart. Please try again.');
     }
   };
-  // --- End Updated handleLearnMore ---
 
   const prev = () => {
     setImageLoaded(false);
@@ -539,27 +533,21 @@ const BannerCarousel = ({ onViewDetails }) => {
     return () => clearTimeout(timer);
   }, [current]);
 
-  // --- Updated loading state to use skeleton ---
   if (loading) {
     return <SkeletonLoader />;
   }
-  // --- End updated loading state ---
 
-  if (error && banners.length === 0) {
+  const currentBanner = banners[current];
+
+  if (!currentBanner) {
     return (
       <div className="container my-5">
         <div className="row">
           <div className="col-12">
-            <div className="alert alert-warning text-center rounded-4" style={{ minHeight: '500px' }} role="alert">
+            <div className="alert alert-danger text-center rounded-4" style={{ minHeight: '500px' }} role="alert">
               <div className="d-flex flex-column justify-content-center h-100">
-                <h4 className="alert-heading">Unable to Load Products</h4>
-                <p>{error}</p>
-                <button 
-                  className="btn btn-primary mt-3"
-                  onClick={() => window.location.reload()}
-                >
-                  Try Again
-                </button>
+                <h4 className="alert-heading">No Products Found</h4>
+                <p>We were unable to load any products at this time. Please check your internet connection or try again later.</p>
               </div>
             </div>
           </div>
@@ -567,8 +555,6 @@ const BannerCarousel = ({ onViewDetails }) => {
       </div>
     );
   }
-
-  const currentBanner = banners[current];
 
   return (
     <>
@@ -694,11 +680,18 @@ const BannerCarousel = ({ onViewDetails }) => {
                         transition: 'all 0.6s ease 0.35s'
                       }}
                     >
-                      <div className="d-flex align-items-center gap-3 mb-2">
-                        <span className="h2 fw-bold text-success mb-0">
-                          KSh {currentBanner.unitPrice.toLocaleString()}
-                        </span>
-                      </div>
+                      {showPrice ? (
+                        <div className="d-flex align-items-center gap-3 mb-2">
+                          <span className="h2 fw-bold text-success mb-0">
+                            KSh {currentBanner.unitPrice.toLocaleString()}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="mb-2">
+                          <small className="text-muted fst-italic">Log in to see price</small>
+                        </div>
+                      )}
+                      
                       <div className="mt-2">
                         <span className={`badge ${currentBanner.inStock ? 'bg-success' : 'bg-danger'} fw-normal`}>
                           {currentBanner.inStock ? `${currentBanner.stockCount} in stock` : 'Out of stock'}
@@ -777,52 +770,73 @@ const BannerCarousel = ({ onViewDetails }) => {
                       }}
                     />
                     
-                    <div 
-                      className="position-relative rounded-4 overflow-hidden shadow-lg"
-                      style={{
-                        width: '350px',
-                        height: '350px',
-                        transform: imageLoaded ? 'scale(1) rotate(0deg)' : 'scale(0.8) rotate(-5deg)',
-                        opacity: imageLoaded ? 1 : 0,
-                        transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        cursor: 'pointer'
-                      }}
-                      onClick={handleLearnMore}
-                      title="Click to view details"
-                    >
-                      <img
-                        src={currentBanner.image}
-                        alt={currentBanner.title}
-                        className="w-100 h-100 object-fit-cover"
-                        onLoad={() => setImageLoaded(true)}
-                        onError={(e) => {
-                          e.target.src = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=600&fit=crop';
-                          setImageLoaded(true);
-                        }}
-                      />
+                    {showPrice ? (
                       <div 
-                        className="position-absolute bottom-0 start-0 w-100 h-50"
+                        className="position-relative rounded-4 overflow-hidden shadow-lg"
                         style={{
-                          background: 'linear-gradient(transparent, rgba(0,0,0,0.1))'
+                          width: '350px',
+                          height: '350px',
+                          transform: imageLoaded ? 'scale(1) rotate(0deg)' : 'scale(0.8) rotate(-5deg)',
+                          opacity: imageLoaded ? 1 : 0,
+                          transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          cursor: 'pointer'
                         }}
-                      />
-                      
-                      <div 
-                        className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                        style={{
-                          backgroundColor: 'rgba(0,0,0,0.7)',
-                          opacity: 0,
-                          transition: 'opacity 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.target.style.opacity = 1}
-                        onMouseLeave={(e) => e.target.style.opacity = 0}
+                        onClick={handleLearnMore}
+                        title="Click to view details"
                       >
-                        <div className="text-center text-white">
-                          <Eye size={32} className="mb-2" />
-                          <div>View Details</div>
+                        <img
+                          src={currentBanner.image}
+                          alt={currentBanner.title}
+                          className="w-100 h-100 object-fit-cover"
+                          onLoad={() => setImageLoaded(true)}
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=600&fit=crop';
+                            setImageLoaded(true);
+                          }}
+                        />
+                        <div 
+                          className="position-absolute bottom-0 start-0 w-100 h-50"
+                          style={{
+                            background: 'linear-gradient(transparent, rgba(0,0,0,0.1))'
+                          }}
+                        />
+                        
+                        <div 
+                          className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                          style={{
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            opacity: 0,
+                            transition: 'opacity 0.3s ease'
+                          }}
+                          onMouseEnter={(e) => e.target.style.opacity = 1}
+                          onMouseLeave={(e) => e.target.style.opacity = 0}
+                        >
+                          <div className="text-center text-white">
+                            <Eye size={32} className="mb-2" />
+                            <div>View Details</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div
+                        className="position-relative rounded-4 overflow-hidden shadow-lg d-flex align-items-center justify-content-center bg-light text-muted"
+                        style={{
+                          width: '350px',
+                          height: '350px',
+                          transform: 'scale(1)',
+                          opacity: 1,
+                          transition: 'all 0.8s',
+                          cursor: 'pointer'
+                        }}
+                        onClick={handleLearnMore}
+                        title="Click to view details"
+                      >
+                        <div className="text-center">
+                          <Eye size={32} className="mb-2" />
+                          <div>Image available after login</div>
+                        </div>
+                      </div>
+                    )}
 
                     <div 
                       className="position-absolute bg-white rounded-3 shadow-sm p-3"
@@ -904,13 +918,12 @@ const BannerCarousel = ({ onViewDetails }) => {
         </div>
       </div>
 
-      {/* --- New Modal Component Render --- */}
       <ProductDetailsModal 
         product={modalProduct} 
         onClose={handleCloseModal}
         onAddToCart={handleAddToCartFromModal}
+        showPrice={showPrice} 
       />
-      {/* --- End New Modal Component Render --- */}
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossOrigin="anonymous"></script>
 
