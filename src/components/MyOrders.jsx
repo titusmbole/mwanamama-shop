@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Package2, Eye, RotateCcw, Truck, CheckCircle, Clock, XCircle, Search, Filter, Calendar, ChevronDown } from 'lucide-react';
+import { Package2, Eye, RotateCcw, Truck, CheckCircle, Clock, XCircle, Search, Filter, Calendar, ChevronDown, Lock } from 'lucide-react';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -14,13 +15,13 @@ const OrderItem = ({ item }) => {
   return (
     <div className="d-flex align-items-center border-bottom py-2">
       <img 
-        src={item?.image || `https://placehold.co/50x50/667eea/ffffff?text=No+Img`}
-        alt={item?.name || 'product image'}
+        src={item?.imageUrl || `https://placehold.co/50x50/667eea/ffffff?text=No+Img`}
+        alt={item?.productName || 'product image'}
         className="rounded"
         style={{width: '50px', height: '50px', objectFit: 'cover'}}
       />
       <div className="ms-3 flex-grow-1">
-        <h6 className="mb-1 fw-semibold">{item?.name || 'Unknown Item'}</h6>
+        <h6 className="mb-1 fw-semibold">{item?.productName || 'Unknown Item'}</h6>
         <small className="text-muted">Qty: {itemQuantity} × KSh {itemPrice.toLocaleString()}</small>
       </div>
       <div className="text-end">
@@ -68,9 +69,11 @@ const OrderCard = ({ order }) => {
             </div>
             <div className="text-muted small">
               <span className="me-4">
+                {/* NOTE: 'dateCreated' is not in the JSON you provided. You will need to confirm the correct key. */}
                 <Calendar size={14} className="me-1" />
                 Ordered: {new Date(order?.dateCreated).toLocaleDateString()}
               </span>
+              {/* NOTE: 'deliveryDate' is not in the JSON you provided. You will need to confirm the correct key. */}
               {order?.deliveryDate && (
                 <span>
                   <Truck size={14} className="me-1" />
@@ -81,7 +84,8 @@ const OrderCard = ({ order }) => {
           </div>
           <div className="col-md-4 text-md-end">
             <div className="fw-bold fs-5 mb-2" style={{color: '#667eea'}}>
-              KSh {order?.total?.toLocaleString() ?? '0.00'}
+              {/* NOTE: 'total' is not in the JSON you provided. It has 'price' at the top level. Consider using `order?.price`. */}
+              KSh {order?.price?.toLocaleString() ?? '0.00'}
             </div>
             <small className="text-muted">{order?.items?.length || 0} items</small>
           </div>
@@ -91,6 +95,7 @@ const OrderCard = ({ order }) => {
         <div className="mb-3">
           <div className="d-flex justify-content-between mb-2">
             <small className="text-muted">Order Progress</small>
+            {/* NOTE: 'progress' is not in the JSON you provided. You will need to confirm the correct key or calculate this. */}
             <small className="text-muted">{order?.progress || 0}% Complete</small>
           </div>
           <div className="progress" style={{height: '6px'}}>
@@ -107,8 +112,8 @@ const OrderCard = ({ order }) => {
             {order?.items?.slice(0, 3).map((item, index) => (
               <img
                 key={index}
-                src={item?.image || `https://placehold.co/40x40/667eea/ffffff?text=No+Img`}
-                alt={item?.name}
+                src={item?.imageUrl || `https://placehold.co/40x40/667eea/ffffff?text=No+Img`}
+                alt={item?.productName}
                 className="rounded border"
                 style={{
                   width: '40px',
@@ -169,6 +174,7 @@ const OrderCard = ({ order }) => {
             </button>
           )}
           
+          {/* NOTE: 'canTrack' is not in the JSON you provided. You will need to confirm the correct key. */}
           {order?.canTrack && (
             <button className="btn btn-outline-info btn-sm">
               <Truck size={16} className="me-1" />
@@ -176,6 +182,7 @@ const OrderCard = ({ order }) => {
             </button>
           )}
           
+          {/* NOTE: 'canCancel' is not in the JSON you provided. You will need to confirm the correct key. */}
           {order?.canCancel && (
             <button className="btn btn-outline-danger btn-sm">
               <XCircle size={16} className="me-1" />
@@ -224,23 +231,23 @@ const Orders = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const { adminToken } = useAdminAuth();
+  const { user } = useAuth();
+  const authToken = adminToken || user?.token;
 
   useEffect(() => {
     const fetchOrders = async () => {
-      // Don't fetch if no token is available
-      if (!adminToken) {
+      if (!authToken) {
         setIsLoading(false);
         return;
       }
       try {
         setIsLoading(true);
         const response = await axios.get(`${BASE_URL}/orders`, {
-          headers: { Authorization: `Bearer ${adminToken}` },
+          headers: { Authorization: `Bearer ${authToken}` },
         });
         setOrders(response.data?.content || response.data || []);
       } catch (error) {
         console.error("Error fetching orders:", error);
-        // Only show toast if we are sure there's a login issue
         if (error.response?.status === 401) {
            toast.error("Session expired. Please log in again.");
         } else {
@@ -252,11 +259,12 @@ const Orders = () => {
     };
 
     fetchOrders();
-  }, [adminToken]);
+  }, [authToken]);
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.items?.some(item => item.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+                         // Corrected 'item.name' to 'item.productName'
+                         order.items?.some(item => item.productName?.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || order.status?.toLowerCase() === statusFilter?.toLowerCase();
     return matchesSearch && matchesStatus;
   });
@@ -266,7 +274,8 @@ const Orders = () => {
     delivered: orders?.filter(o => o.status?.toLowerCase() === 'delivered').length ?? 0,
     processing: orders?.filter(o => o.status?.toLowerCase() === 'processing').length ?? 0,
     shipped: orders?.filter(o => o.status?.toLowerCase() === 'shipped').length ?? 0,
-    totalSpent: orders?.reduce((sum, order) => sum + (order.total || 0), 0) ?? 0
+    // Corrected 'order.total' to 'order.price' based on JSON model
+    totalSpent: orders?.reduce((sum, order) => sum + (order.price || 0), 0) ?? 0
   };
 
   return (
@@ -380,7 +389,7 @@ const Orders = () => {
             <OrderCardSkeleton />
             <OrderCardSkeleton />
           </div>
-        ) : !adminToken ? (
+        ) : !authToken ? (
           /* "Please Log In" message */
           <div className="text-center py-5">
             <div className="mb-4">
@@ -396,6 +405,7 @@ const Orders = () => {
         ) : filteredOrders.length > 0 ? (
           <div>
             {filteredOrders.map(order => (
+              // Using order.id as the key, as it is a unique identifier in the JSON
               <OrderCard key={order.id} order={order} />
             ))}
             

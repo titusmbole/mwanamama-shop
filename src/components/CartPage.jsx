@@ -3,9 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, ArrowRight, Shield, Truck, RotateCcw, Trash2 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import CartItem from './CartItem';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CartPage = () => {
+  const { user } = useAuth();
   const { 
     cartItems, 
     removeFromCart, 
@@ -16,24 +20,35 @@ const CartPage = () => {
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [isCheckingPromo, setIsCheckingPromo] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // NEW: State for loading
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // NEW: Simulate data fetching with a timeout
+  // Load state and clear any ongoing redirects
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000); // Wait 1 second to simulate loading
+    }, 1000); 
 
     return () => clearTimeout(timer);
   }, []);
 
   const handleMoveToWishlist = (item) => {
+    // Check if user is logged in before allowing the action
+    if (!user || !user.token) {
+        toast.error("Please log in to manage your wishlist.");
+        return;
+    }
     toggleWishlist(item);
     removeFromCart(item.id);
   };
  
   const applyPromoCode = () => {
+    // Check if user is logged in before allowing the action
+    if (!user || !user.token) {
+        toast.error("Please log in to apply promo codes.");
+        return;
+    }
+    
     if (!promoCode.trim()) return;
     
     setIsCheckingPromo(true);
@@ -50,8 +65,9 @@ const CartPage = () => {
           code: promoCode.toUpperCase(),
           ...validCodes[promoCode.toUpperCase()]
         });
+        toast.success("Promo code applied successfully!");
       } else {
-        alert('Invalid promo code');
+        toast.error('Invalid promo code');
       }
       setIsCheckingPromo(false);
     }, 1000);
@@ -60,13 +76,17 @@ const CartPage = () => {
   const removePromoCode = () => {
     setAppliedPromo(null);
     setPromoCode('');
+    toast.info("Promo code removed.");
   };
 
   const handleCheckout = () => {
-    if (cartItems.length > 0) {
-      navigate('/checkout'); 
+    // Check if user is logged in AND cart is not empty before allowing checkout
+    if (!user || !user.token) {
+        toast.error("You must be logged in to proceed to checkout.");
+    } else if (cartItems.length === 0) {
+      toast.warn("Your cart is empty!");
     } else {
-      alert("Your cart is empty!");
+      navigate('/checkout'); 
     }
   };
   

@@ -81,12 +81,20 @@ const Products = () => {
   
   // Dedicated event handler for adding a product to the cart
   const handleAddToCart = (product) => {
+    if (!isLoggedIn) {
+      showToast(`Please log in to add products to your cart.`, 'error');
+      return;
+    }
     addToCart(product);
     showToast(`✅ ${product.name} added to cart!`, 'success');
   };
 
   // Dedicated event handler for toggling a product in the wishlist
   const handleToggleWishlist = (product) => {
+    if (!isLoggedIn) {
+      showToast(`Please log in to add products to your wishlist.`, 'error');
+      return;
+    }
     toggleWishlist(product);
     const isInWishlist = wishlistItems.some(item => item.id === product.id);
     if (isInWishlist) {
@@ -98,6 +106,11 @@ const Products = () => {
   
   // Custom logic for quick view add to cart
   const handleQuickViewAddToCart = (product) => {
+    if (!isLoggedIn) {
+      showToast(`Please log in to add products to your cart.`, 'error');
+      handleCloseQuickView();
+      return;
+    }
     addToCart({
       id: product.id,
       name: product.name,
@@ -112,6 +125,11 @@ const Products = () => {
   
   // Custom logic for quick view toggle wishlist
   const handleQuickViewToggleWishlist = (product) => {
+    if (!isLoggedIn) {
+      showToast(`Please log in to add products to your wishlist.`, 'error');
+      handleCloseQuickView();
+      return;
+    }
     toggleWishlist({
       id: product.id,
       name: product.name,
