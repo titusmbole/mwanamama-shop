@@ -166,12 +166,33 @@ const ProductDetailsModal = ({ product, onClose, onAddToCart, showPrice }) => {
                     <img src={product.image} alt={product.title} className="w-100 h-100 object-fit-cover" />
                   </div>
                 ) : (
-                  <div 
-                    className="rounded-4 overflow-hidden shadow-sm d-flex align-items-center justify-content-center bg-light text-muted p-4"
-                    style={{ width: '100%', maxWidth: '400px', height: 'auto', aspectRatio: '1 / 1' }}
-                  >
-                    Image available after login
-                  </div>
+                  // Inside BannerCarousel.jsx, find the main display block and replace it with this:
+
+<div 
+  className="position-relative rounded-4 overflow-hidden shadow-lg"
+  style={{
+    width: '350px',
+    height: '350px',
+    transform: imageLoaded ? 'scale(1) rotate(0deg)' : 'scale(0.8) rotate(-5deg)',
+    opacity: imageLoaded ? 1 : 0,
+    transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+    cursor: 'pointer'
+  }}
+  onClick={handleLearnMore}
+  title="Click to view details"
+>
+  <img
+    src={currentBanner.image}
+    alt={currentBanner.title}
+    className="w-100 h-100 object-fit-cover"
+    onLoad={() => setImageLoaded(true)}
+    onError={(e) => {
+      // Fallback image in case the main image fails to load
+      e.target.src = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=600&fit=crop';
+      setImageLoaded(true);
+    }}
+  />
+</div>
                 )}
               </div>
               <div className="col-md-6">
