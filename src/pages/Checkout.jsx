@@ -5,8 +5,7 @@ import { useCart } from "../contexts/CartContext";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-const BASE_URL = "https://api.mwanamama.org/api/v1";
+import { BASE_URL } from "../utils/helpers";
 
 const ErrorModal = ({ message, onClose }) => {
   if (!message) return null;

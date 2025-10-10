@@ -1,6 +1,6 @@
 // src/components/Header.jsx
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   ShoppingCart, Heart, User, Search, Menu, X, ChevronDown, ChevronRight,
   Home, Package, Grid3x3, Phone, Mail, Truck, Shield,
   LogIn, UserPlus, Settings, Package2, MapPin, LogOut
@@ -9,8 +9,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-
-const BASE_URL = 'https://api.mwanamama.org/api/v1';
+import { BASE_URL } from '../utils/helpers';
 
 const Header = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

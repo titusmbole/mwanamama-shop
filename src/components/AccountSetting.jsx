@@ -3,8 +3,7 @@ import { User, Mail, Phone, Lock, MapPin, Camera, Save, Eye, EyeOff, Bell, Shiel
 import { useAuth } from '../contexts/AuthContext';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import axios from 'axios';
-
-const BASE_URL = 'https://api.mwanamama.org/api/v1';
+import { BASE_URL } from '../utils/helpers';
 
 const AccountSettings = () => {
   const [activeTab, setActiveTab] = useState('profile');
