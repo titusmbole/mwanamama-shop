@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Truck, ShoppingCart, Lock, Shield, CheckCircle, User, X } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { BASE_URL } from "../utils/helpers";
+import { BASE, BASE_URL, getMpesaStatusMessage } from "../utils/helpers";
 
 const ErrorModal = ({ message, onClose }) => {
   if (!message) return null;
@@ -29,6 +31,207 @@ const ErrorModal = ({ message, onClose }) => {
               Close
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MpesaModal = ({
+  amount,
+  phoneNumber,
+  onPhoneNumberChange,
+  onClose,
+  onSubmit,
+          isProcessing,
+          processingTransaction = false,
+          transactionSuccess = null,
+          transactionError = null,
+          onCompleteOrder = null
+}) => {
+  return (
+    <div className="modal-backdrop-custom">
+      <div className="modal-dialog-custom modal-dialog-centered">
+        <div className="modal-content-custom rounded-4 shadow-lg border-0">
+          <div className="modal-header-custom p-4 border-bottom-0 position-relative">
+            <h5 className="modal-title fw-bold text-success">
+              <span className="me-2">📱</span>
+              M-Pesa Payment
+            </h5>
+            <button
+              type="button"
+              className="btn-close-custom"
+              onClick={onClose}
+              disabled={processingTransaction}
+            >
+              <X size={24} />
+            </button>
+          </div>
+          <div className="modal-body-custom p-4">
+            {transactionSuccess ? (
+              <div className="text-center">
+                <div className="mb-4">
+                  <div className="text-success">
+                    <svg width="64" height="64" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                      <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4 className="fw-bold text-success mb-3">Payment Completed Successfully!</h4>
+                <div className="alert alert-success" role="alert">
+                  <strong>{transactionSuccess.message}</strong>
+                </div>
+                <small className="text-muted">
+                  Your cart has been cleared and you can now close this window.
+                </small>
+              </div>
+            ) : transactionError ? (
+              <div className="text-center">
+                <div className="mb-4">
+                  <div className="text-danger">
+                    <svg width="64" height="64" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                      <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4 className="fw-bold text-danger mb-3">Payment Failed</h4>
+                <div className="alert alert-danger" role="alert">
+                  <strong>{transactionError.message}</strong>
+                </div>
+                <small className="text-muted">
+                  You can close this window and try again or contact support.
+                </small>
+              </div>
+            ) : processingTransaction ? (
+              <div className="text-center">
+                <div className="mb-4">
+                  <div className="spinner-border text-success" style={{ width: '3rem', height: '3rem' }} role="status">
+                    <span className="visually-hidden">Processing...</span>
+                  </div>
+                </div>
+                <h4 className="fw-bold text-success mb-3">Processing Payment</h4>
+                <div className="alert alert-success" role="alert">
+                  <strong>M-Pesa STK Push sent successfully!</strong><br/>
+                  Please check your phone and enter your M-Pesa PIN to complete the payment.
+                </div>
+                <small className="text-muted">
+                  Processing your payment, please wait...
+                </small>
+              </div>
+            ) : transactionSuccess ? (
+              <div className="text-center">
+                <div className="mb-4">
+                  <div className="text-success">
+                    <svg width="64" height="64" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                      <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4 className="fw-bold text-success mb-3">Payment Completed Successfully!</h4>
+                <div className="alert alert-success" role="alert">
+                  <strong>{transactionSuccess.message}</strong>
+                </div>
+                <small className="text-muted mb-4">
+                  Click the button below to complete your order.
+                </small>
+                <div className="d-grid">
+                  <button
+                    type="button"
+                    className="btn btn-success btn-lg"
+                    onClick={onCompleteOrder}
+                  >
+                    ✅ Complete Order
+                  </button>
+                </div>
+              </div>
+            ) : transactionError ? (
+              <div className="text-center">
+                <div className="mb-4">
+                  <div className="text-danger">
+                    <svg width="64" height="64" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                      <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4 className="fw-bold text-danger mb-3">Payment Failed</h4>
+                <div className="alert alert-danger" role="alert">
+                  <strong>{transactionError.message}</strong>
+                </div>
+                <small className="text-muted">
+                  You can close this window and try again or contact support.
+                </small>
+              </div>
+            ) : (
+              <>
+                <div className="text-center mb-4">
+                  <div className="mb-3">
+                    <div className="text-muted mb-2">Amount to Pay</div>
+                    <div className="fs-2 fw-bold text-success">KSh {amount}</div>
+                  </div>
+                  <div className="alert alert-info text-start">
+                    <small>
+                      <strong>M-Pesa STK Push Instructions:</strong><br/>
+                      • Enter your M-Pesa registered phone number<br/>
+                      • You will receive an M-Pesa prompt on your phone<br/>
+                      • Enter your M-Pesa PIN to complete payment<br/>
+                      • Payment will be processed instantly
+                    </small>
+                  </div>
+                </div>
+
+                <div className="row g-3">
+                  <div className="col-12">
+                    <label className="form-label fw-medium">Phone Number *</label>
+                    <input
+                      type="tel"
+                      className="form-control form-control-lg"
+                      placeholder="+254 712 345 678"
+                      value={phoneNumber}
+                      onChange={(e) => onPhoneNumberChange(e.target.value)}
+                      required
+                      disabled={isProcessing}
+                    />
+                    <small className="text-muted">Must be your M-Pesa registered number</small>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {!processingTransaction && (
+            <div className="modal-footer d-flex justify-content-between border-top-0">
+              <button type="button" className="btn btn-secondary" onClick={onClose} disabled={isProcessing}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-success"
+                disabled={isProcessing || !phoneNumber.trim()}
+                onClick={onSubmit}
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Processing...
+                  </>
+                ) : (
+                  "Confirm Payment"
+                )}
+              </button>
+            </div>
+          )}
+
+          {processingTransaction && (
+            <div className="modal-footer d-flex justify-content-center border-top-0">
+              <button type="button" className="btn btn-secondary" onClick={onClose}>
+                Close
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -218,8 +421,10 @@ const CheckoutSkeleton = () => (
 );
 
 const Checkout = () => {
+  const navigate = useNavigate();
   const { cartItems, clearCart } = useCart();
   const { admin, adminToken } = useAdminAuth();
+  const [checkoutType, setCheckoutType] = useState("group");
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [formData, setFormData] = useState({
@@ -234,6 +439,14 @@ const Checkout = () => {
     groupName: "",
     creditOfficerId: "",
     creditOfficerName: "",
+    // Individual client fields
+    email: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    billingAddress: "",
+    billingCity: "",
+    billingPostalCode: "",
   });
   const [groups, setGroups] = useState([]);
   const [clients, setClients] = useState([]);
@@ -242,6 +455,23 @@ const Checkout = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loanLimitError, setLoanLimitError] = useState(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showMpesaModal, setShowMpesaModal] = useState(false);
+  const [mpesaPhoneNumber, setMpesaPhoneNumber] = useState("");
+  const [processingTransaction, setProcessingTransaction] = useState(false);
+
+  // Auto-populate M-Pesa phone number from customer details
+  useEffect(() => {
+    if (showMpesaModal && formData.phoneNumber && checkoutType === "individual") {
+      setMpesaPhoneNumber(formData.phoneNumber);
+    }
+  }, [showMpesaModal, formData.phoneNumber, checkoutType]);
+  const [transactionDetails, setTransactionDetails] = useState(null);
+  const [transactionSuccess, setTransactionSuccess] = useState(null);
+  const [transactionError, setTransactionError] = useState(null);
+  const [checkoutRequestId, setCheckoutRequestId] = useState(null);
+  const [pollingIntervalId, setPollingIntervalId] = useState(null);
+
+
   const orderSummary = useMemo(() => {
     const subtotal = cartItems.reduce(
       (acc, item) => acc + item.price * item.quantity,
@@ -283,6 +513,22 @@ const Checkout = () => {
         setIsLoadingData(false);
       }
     };
+
+    // Auto-populate credit officer name from localStorage adminUser
+    const adminUserString = localStorage.getItem('adminUser');
+    if (adminUserString) {
+      try {
+        const adminUserData = JSON.parse(adminUserString);
+        setFormData(prev => ({
+          ...prev,
+          creditOfficerId: adminUserData.id || adminUserData.username || "",
+          creditOfficerName: adminUserData.name || adminUserData.username || "",
+        }));
+      } catch (error) {
+        console.error("Error parsing adminUser data:", error);
+      }
+    }
+
     if (adminToken) {
       fetchData();
     }
@@ -404,14 +650,29 @@ const Checkout = () => {
       return;
     }
 
-    const requiredFields = [
-      { field: 'clientId', label: 'Client' },
-      { field: 'groupId', label: 'Group' },
-      { field: 'branchId', label: 'Branch' },
-      { field: 'creditOfficerId', label: 'Credit Officer ID' },
-    ];
+    // Validation based on checkout type
+    let requiredFields = [];
+    let missingFields = [];
 
-    const missingFields = [];
+    if (checkoutType === "group") {
+      requiredFields = [
+        { field: 'clientId', label: 'Client' },
+        { field: 'groupId', label: 'Group' },
+        { field: 'branchId', label: 'Branch' },
+        { field: 'creditOfficerId', label: 'Credit Officer ID' },
+      ];
+    } else if (checkoutType === "individual") {
+      requiredFields = [
+        { field: 'firstName', label: 'First Name' },
+        { field: 'lastName', label: 'Last Name' },
+        { field: 'email', label: 'Email' },
+        { field: 'phoneNumber', label: 'Phone Number' },
+        { field: 'billingAddress', label: 'Billing Address' },
+        { field: 'billingCity', label: 'City' },
+        { field: 'branchId', label: 'Branch' },
+      ];
+    }
+
     requiredFields.forEach(({ field, label }) => {
       const value = formData[field];
       if (!value || String(value).trim() === "") {
@@ -433,58 +694,75 @@ const Checkout = () => {
         setIsProcessing(false);
         return;
       }
-      
-      const payload = {
-        client: Number(formData.clientId),
-        bookedBy: Number(formData.creditOfficerId),
-        items: orderSummary.items.map((item) => ({
-          productId: item.id,
-          quantity: item.quantity,
-        })),
-      };
 
-      console.log("Submitting order with payload:", payload);
+      if (checkoutType === "group") {
+        // Keep existing group order logic unchanged
+        const payload = {
+          client: Number(formData.clientId),
+          bookedBy: Number(formData.creditOfficerId),
+          items: orderSummary.items.map((item) => ({
+            productId: item.id,
+            quantity: item.quantity,
+          })),
+        };
 
-      const response = await axios.post(`${BASE_URL}/orders/place`, payload, {
-        headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      
-      console.log("API Response Status:", response.status);
-      console.log("API Response Data:", response.data);
+        console.log("Submitting group order with payload:", payload);
 
-      if (response.status >= 200 && response.status < 300) {
-        toast.success("Order Placed Successfully! 🎉", {
-          position: "top-center",
-          autoClose: 3000,
+        const response = await axios.post(`${BASE_URL}/orders/place`, payload, {
+          headers: { Authorization: `Bearer ${adminToken}` },
         });
-        clearCart();
-        setFormData({
-          clientId: "",
-          firstName: "",
-          lastName: "",
-          branchId: "",
-          branchName: "",
-          phoneNumber: "",
-          location: "",
-          groupId: "",
-          groupName: "",
-          creditOfficerId: "",
-          creditOfficerName: "",
-        });
-        setSelectedClientId("");
-        setSelectedGroupId("");
-      } else {
-        toast.error(response.data?.message || "Failed to place order. Unexpected response.");
+
+        console.log("API Response Status:", response.status);
+        console.log("API Response Data:", response.data);
+
+        if (response.status >= 200 && response.status < 300) {
+          toast.success("Order Placed Successfully! 🎉", {
+            position: "top-center",
+            autoClose: 3000,
+          });
+          clearCart();
+          setFormData({
+            clientId: "",
+            firstName: "",
+            lastName: "",
+            branchId: "",
+            branchName: "",
+            phoneNumber: "",
+            location: "",
+            groupId: "",
+            groupName: "",
+            creditOfficerId: "",
+            creditOfficerName: "",
+            // Individual client fields
+            email: "",
+            address: "",
+            city: "",
+            postalCode: "",
+            billingAddress: "",
+            billingCity: "",
+            billingPostalCode: "",
+          });
+          setSelectedClientId("");
+          setSelectedGroupId("");
+          setCheckoutType("group");
+        } else {
+          toast.error(response.data?.message || "Failed to place order. Unexpected response.");
+        }
+      } else if (checkoutType === "individual") {
+        // For individual checkout, show M-Pesa modal instead of creating order directly
+        setShowMpesaModal(true);
+        setIsProcessing(false);
+        return;
       }
     } catch (error) {
-      console.error("Error submitting order:", error);
-      
+      console.error("Error submitting checkout:", error);
+
       if (axios.isAxiosError(error)) {
         console.error("Axios error response:", error.response);
-        const apiErrorMessage = error.response?.data?.message || 
-                               error.response?.data?.error || 
+        const apiErrorMessage = error.response?.data?.message ||
+                               error.response?.data?.error ||
                                "Failed to place order. Please check your network.";
-        
+
         if (apiErrorMessage.toLowerCase().includes("loan limit reached")) {
           setLoanLimitError(apiErrorMessage);
           setShowErrorModal(true);
@@ -498,6 +776,170 @@ const Checkout = () => {
       setIsProcessing(false);
     }
   };
+
+
+
+  // Polling function to check transaction status
+  const pollTransactionStatus = async (checkoutRequestId) => {
+    try {
+      const response = await axios.get(`${BASE}/pesa/transaction/query`, {
+        params: { checkoutRequestId },
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+
+      const { ResultCode, ResultDesc, status, transaction } = response.data;
+
+      console.log("Polling response:", response.data);
+
+      if (ResultCode === 0 && transaction) {
+        // Clear polling interval immediately to prevent duplicate submissions
+        if (pollingIntervalId) {
+          clearInterval(pollingIntervalId);
+          setPollingIntervalId(null);
+        }
+
+        try {
+          // Store payload data in localStorage for persistence
+          const payloadData = {
+            orderSummary,
+            formData,
+            checkoutRequestId,
+            transaction
+          };
+
+          localStorage.setItem('paymentCompletionData', JSON.stringify(payloadData));
+
+          // Use window.location for navigation to ensure proper page refresh
+          window.location.href = '/payment-completion';
+
+        } catch (navError) {
+          console.error("Error storing data and navigating:", navError);
+
+          // If something fails, clear polling and refresh checkout page
+          if (pollingIntervalId) {
+            clearInterval(pollingIntervalId);
+            setPollingIntervalId(null);
+          }
+
+          setProcessingTransaction(false);
+          setTransactionError({
+            message: "Navigation failed. Refreshing page...",
+          });
+
+          toast.error("Refreshing checkout page...", {
+            position: "top-center",
+            autoClose: 2000,
+          });
+
+          // Refresh the current page after a short delay
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+      } else if (status === "PENDING" || ResultCode === 4999) {
+        // Still processing - continue polling (no UI updates)
+        console.log("Payment still processing...");
+      } else {
+        // Error or failed - show error message
+        setProcessingTransaction(false);
+        setTransactionError({
+          message: ResultDesc || "Payment failed. Please try again.",
+        });
+        setIsProcessing(false);
+
+        // Clear polling interval
+        if (pollingIntervalId) {
+          clearInterval(pollingIntervalId);
+          setPollingIntervalId(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error polling transaction status:", error);
+      // Check if polling should stop due to repeated errors
+      if (!error.response || error.response.status !== 200) {
+        // If polling is failing repeatedly, clear interval
+        if (pollingIntervalId) {
+          clearInterval(pollingIntervalId);
+          setPollingIntervalId(null);
+        }
+      }
+    }
+  };
+
+  const handleMpesaPayment = async () => {
+    setIsProcessing(true);
+
+    try {
+      // Simple payload for STP push
+      const paymentPayload = {
+        phoneNumber: mpesaPhoneNumber,
+        amount: orderSummary.total.toString(),
+      };
+
+      console.log("Initiating M-Pesa payment with payload:", paymentPayload);
+
+      // Call M-Pesa STP push endpoint
+      const response = await axios.post(`${BASE}/pesa/stk/push`, paymentPayload, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+
+      console.log("M-Pesa Response Status:", response.status);
+      console.log("M-Pesa Response Data:", response.data);
+
+      const customerMessage = response.data?.CustomerMessage ||
+                             "M-Pesa STK Push sent! Check your phone to complete payment.";
+
+      if (response.status >= 200 && response.status < 300) {
+        // Extract checkoutRequestId from response for polling
+        const requestId = response.data?.CheckoutRequestID || response.data?.checkoutRequestId;
+        console.log("CheckoutRequestId for polling:", requestId);
+
+        if (requestId) {
+          setCheckoutRequestId(requestId);
+
+          toast.success(customerMessage, {
+            position: "top-center",
+            autoClose: 5000,
+          });
+
+          // Keep modal open with processing state
+          setMpesaPhoneNumber("");
+          setShowErrorModal(false);
+          setProcessingTransaction(true);
+
+          // Start polling every 3 seconds
+          const intervalId = setInterval(() => {
+            pollTransactionStatus(requestId);
+          }, 3000);
+
+          setPollingIntervalId(intervalId);
+        } else {
+          toast.error("Failed to get checkout request ID for payment verification.");
+          setIsProcessing(false);
+        }
+
+      } else {
+        toast.error(response.data?.message || "Failed to initiate M-Pesa payment.");
+      }
+    } catch (error) {
+      console.error("Error initiating M-Pesa payment:", error);
+
+      if (axios.isAxiosError(error)) {
+        const apiErrorMessage = error.response?.data?.message ||
+                               error.response?.data?.error ||
+                               "Failed to initiate M-Pesa payment. Please try again.";
+        toast.error(apiErrorMessage);
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      // Note: Don't set isProcessing to false here
+      // Keep the processing state for the modal
+      // You'll need to handle this when payment status is checked
+    }
+  };
+
+
 
   const handleCloseErrorModal = () => {
     setShowErrorModal(false);
@@ -557,86 +999,288 @@ const Checkout = () => {
                           <p className="text-muted mb-0 small">Please provide your details</p>
                         </div>
                       </div>
-                      <div className="row g-3">
-                        <div className="col-md-12">
-                          <label className="form-label fw-medium">Group Name</label>
-                          <select
-                            className="form-select form-select-lg"
-                            value={selectedGroupId || ""}
-                            onChange={(e) => handleGroupSelect(e.target.value)}
-                          >
-                            <option value="">Select a Group</option>
-                            {groups.map((group) => (
-                              <option key={group.id} value={group.id}>
-                                {group.groupName || group.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="col-md-12">
-                          <label className="form-label fw-medium">Client</label>
-                          <select
-                            className="form-select form-select-lg"
-                            value={selectedClientId || ""}
-                            onChange={(e) => handleClientSelect(e.target.value)}
-                            disabled={!selectedGroupId}
-                          >
-                            <option value="">Select a Client</option>
-                            {clients.map((client) => (
-                              <option key={client.id} value={client.id}>
-                                {client.fullName} ({client.clientNumber})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label fw-medium">First Name</label>
-                          <input
-                            type="text"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            className="form-control form-control-lg"
-                            placeholder="John"
-                            readOnly
-                          />
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label fw-medium">Last Name</label>
-                          <input
-                            type="text"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            className="form-control form-control-lg"
-                            placeholder="Doe"
-                            readOnly
-                          />
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label fw-medium">Branch</label>
-                          <input
-                            type="text"
-                            name="branchName"
-                            value={formData.branchName}
-                            className="form-control form-control-lg"
-                            placeholder="Main Branch"
-                            readOnly
-                          />
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label fw-medium">Phone Number</label>
-                          <input
-                            type="tel"
-                            name="phoneNumber"
-                            value={formData.phoneNumber}
-                            onChange={handleChange}
-                            className="form-control form-control-lg"
-                            placeholder="+254 700 000 000"
-                            readOnly
-                          />
+
+                      {/* Checkout Type Selection */}
+                      <div className="mb-4">
+                        <div className="row">
+                          <div className="col-12">
+                            <label className="form-label fw-medium mb-3">Checkout Type</label>
+                            <div className="d-flex gap-4">
+                              <div className="form-check">
+                                <input
+                                  className="form-check-input"
+                                  type="radio"
+                                  name="checkoutType"
+                                  id="groupCheckout"
+                                  value="group"
+                                  checked={checkoutType === "group"}
+                                  onChange={(e) => {
+                                    setCheckoutType(e.target.value);
+                                    setSelectedClientId("");
+                                    setSelectedGroupId("");
+                                    // Reset form data when switching types
+                                    setFormData({
+                                      ...formData,
+                                      clientId: "",
+                                      firstName: "",
+                                      lastName: "",
+                                      phoneNumber: "",
+                                      groupId: "",
+                                      groupName: "",
+                                      creditOfficerId: admin?.id || "",
+                                      creditOfficerName: admin?.name || admin?.fullName || "",
+                                    });
+                                  }}
+                                />
+                                <label className="form-check-label fw-medium" htmlFor="groupCheckout">
+                                  Group Member
+                                </label>
+                              </div>
+                              <div className="form-check">
+                                <input
+                                  className="form-check-input"
+                                  type="radio"
+                                  name="checkoutType"
+                                  id="individualCheckout"
+                                  value="individual"
+                                  checked={checkoutType === "individual"}
+                                  onChange={(e) => {
+                                    setCheckoutType(e.target.value);
+                                    setSelectedClientId("");
+                                    setSelectedGroupId("");
+                                    // Auto-populate credit officer for individual
+                                    setFormData({
+                                      ...formData,
+                                      clientId: "",
+                                      firstName: "",
+                                      lastName: "",
+                                      phoneNumber: "",
+                                      email: "",
+                                      address: "",
+                                      city: "",
+                                      postalCode: "",
+                                      billingAddress: "",
+                                      billingCity: "",
+                                      billingPostalCode: "",
+                                      groupId: "",
+                                      groupName: "",
+                                      creditOfficerId: admin?.id || "",
+                                      creditOfficerName: admin?.name || admin?.fullName || "",
+                                    });
+                                  }}
+                                />
+                                <label className="form-check-label fw-medium" htmlFor="individualCheckout">
+                                  Individual Client
+                                </label>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Group Checkout Form */}
+                      {checkoutType === "group" && (
+                        <div className="row g-3">
+                          <div className="col-md-12">
+                            <label className="form-label fw-medium">Group Name</label>
+                            <select
+                              className="form-select form-select-lg"
+                              value={selectedGroupId || ""}
+                              onChange={(e) => handleGroupSelect(e.target.value)}
+                            >
+                              <option value="">Select a Group</option>
+                              {groups.map((group) => (
+                                <option key={group.id} value={group.id}>
+                                  {group.groupName || group.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-12">
+                            <label className="form-label fw-medium">Client</label>
+                            <select
+                              className="form-select form-select-lg"
+                              value={selectedClientId || ""}
+                              onChange={(e) => handleClientSelect(e.target.value)}
+                              disabled={!selectedGroupId}
+                            >
+                              <option value="">Select a Client</option>
+                              {clients.map((client) => (
+                                <option key={client.id} value={client.id}>
+                                  {client.fullName} ({client.clientNumber})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-medium">First Name</label>
+                            <input
+                              type="text"
+                              name="firstName"
+                              value={formData.firstName}
+                              onChange={handleChange}
+                              className="form-control form-control-lg"
+                              placeholder="John"
+                              readOnly
+                            />
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-medium">Last Name</label>
+                            <input
+                              type="text"
+                              name="lastName"
+                              value={formData.lastName}
+                              onChange={handleChange}
+                              className="form-control form-control-lg"
+                              placeholder="Doe"
+                              readOnly
+                            />
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-medium">Branch</label>
+                            <input
+                              type="text"
+                              name="branchName"
+                              value={formData.branchName}
+                              className="form-control form-control-lg"
+                              placeholder="Main Branch"
+                              readOnly
+                            />
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-medium">Phone Number</label>
+                            <input
+                              type="tel"
+                              name="phoneNumber"
+                              value={formData.phoneNumber}
+                              onChange={handleChange}
+                              className="form-control form-control-lg"
+                              placeholder="+254 700 000 000"
+                              readOnly
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Individual Checkout Form */}
+                      {checkoutType === "individual" && (
+                        <div>
+                          {/* Personal Information */}
+                          <h5 className="fw-semibold mb-3">Personal Information</h5>
+                          <div className="row g-3 mb-4">
+                            <div className="col-md-6">
+                              <label className="form-label fw-medium">First Name *</label>
+                              <input
+                                type="text"
+                                name="firstName"
+                                value={formData.firstName}
+                                onChange={handleChange}
+                                className="form-control form-control-lg"
+                                placeholder="John"
+                                required
+                              />
+                            </div>
+                            <div className="col-md-6">
+                              <label className="form-label fw-medium">Last Name *</label>
+                              <input
+                                type="text"
+                                name="lastName"
+                                value={formData.lastName}
+                                onChange={handleChange}
+                                className="form-control form-control-lg"
+                                placeholder="Doe"
+                                required
+                              />
+                            </div>
+                            <div className="col-md-6">
+                              <label className="form-label fw-medium">Email *</label>
+                              <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                className="form-control form-control-lg"
+                                placeholder="john.doe@example.com"
+                                required
+                              />
+                            </div>
+                            <div className="col-md-6">
+                              <label className="form-label fw-medium">Phone Number *</label>
+                              <input
+                                type="tel"
+                                name="phoneNumber"
+                                value={formData.phoneNumber}
+                                onChange={handleChange}
+                                className="form-control form-control-lg"
+                                placeholder="+254 700 000 000"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          {/* Billing Address */}
+                          <h5 className="fw-semibold mb-3">Billing Address</h5>
+                          <div className="row g-3 mb-4">
+                            <div className="col-md-12">
+                              <label className="form-label fw-medium">Street Address *</label>
+                              <input
+                                type="text"
+                                name="billingAddress"
+                                value={formData.billingAddress}
+                                onChange={handleChange}
+                                className="form-control form-control-lg"
+                                placeholder="123 Main Street"
+                                required
+                              />
+                            </div>
+                            <div className="col-md-6">
+                              <label className="form-label fw-medium">City *</label>
+                              <input
+                                type="text"
+                                name="billingCity"
+                                value={formData.billingCity}
+                                onChange={handleChange}
+                                className="form-control form-control-lg"
+                                placeholder="Nairobi"
+                                required
+                              />
+                            </div>
+                            <div className="col-md-6">
+                              <label className="form-label fw-medium">Postal Code</label>
+                              <input
+                                type="text"
+                                name="billingPostalCode"
+                                value={formData.billingPostalCode}
+                                onChange={handleChange}
+                                className="form-control form-control-lg"
+                                placeholder="00100"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Branch Selection */}
+                          <h5 className="fw-semibold mb-3">Branch Information</h5>
+                          <div className="row g-3">
+                            <div className="col-md-12">
+                              <label className="form-label fw-medium">Branch *</label>
+                              <select
+                                className="form-select form-select-lg"
+                                name="branchId"
+                                value={formData.branchId}
+                                onChange={handleChange}
+                                required
+                              >
+                                <option value="">Select a Branch</option>
+                                {branches.map((branch) => (
+                                  <option key={branch.id} value={branch.id}>
+                                    {branch.name || branch.branchName}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="card mb-4 border-0 shadow-sm">
@@ -668,9 +1312,10 @@ const Checkout = () => {
                             type="text"
                             name="creditOfficerName"
                             value={formData.creditOfficerName}
+                            onChange={handleChange}
                             className="form-control form-control-lg"
-                            readOnly
-                            style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }}
+                            readOnly={checkoutType === "group"}
+                            style={checkoutType === "group" ? { cursor: 'not-allowed', backgroundColor: '#e9ecef' } : {}}
                           />
                         </div>
                       </div>
@@ -774,7 +1419,7 @@ const Checkout = () => {
                         <button
                           onClick={handleSubmit}
                           disabled={isProcessing || orderSummary.items.length === 0}
-                          className="btn btn-primary btn-lg w-100 py-3 d-flex align-items-center justify-content-center"
+                          className={`btn btn-lg w-100 py-3 d-flex align-items-center justify-content-center ${checkoutType === "individual" ? "btn-success" : "btn-primary"}`}
                         >
                           {isProcessing ? (
                             <div className="d-flex align-items-center">
@@ -783,6 +1428,10 @@ const Checkout = () => {
                               </div>
                               Processing...
                             </div>
+                          ) : checkoutType === "individual" ? (
+                            <>
+                              📱 Proceed with M-Pesa
+                            </>
                           ) : (
                             <>
                               <Lock className="me-2" size={20} />
@@ -804,6 +1453,33 @@ const Checkout = () => {
         message={loanLimitError}
         onClose={handleCloseErrorModal}
       />
+      {showMpesaModal && (
+        <MpesaModal
+          amount={orderSummary.total}
+          phoneNumber={mpesaPhoneNumber}
+          onPhoneNumberChange={setMpesaPhoneNumber}
+          onClose={() => {
+            setShowMpesaModal(false);
+            setMpesaPhoneNumber("");
+            setProcessingTransaction(false);
+            setTransactionSuccess(null);
+            setTransactionError(null);
+            setIsProcessing(false);
+            // Clear polling interval if modal is closed
+            if (pollingIntervalId) {
+              clearInterval(pollingIntervalId);
+              setPollingIntervalId(null);
+            }
+            setCheckoutRequestId(null);
+          }}
+          onSubmit={handleMpesaPayment}
+          isProcessing={isProcessing}
+          processingTransaction={processingTransaction}
+          transactionSuccess={transactionSuccess}
+          transactionError={transactionError}
+          onCompleteOrder={() => handleCompleteOrder(checkoutRequestId, transactionDetails)}
+        />
+      )}
       <style>{`
         .modal-backdrop-custom {
           position: fixed;
