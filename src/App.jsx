@@ -23,6 +23,7 @@ import Products from './pages/Products';
 import Cart from './components/CartPage';
 import Wishlist from './components/Wishlist';
 import Checkout from './pages/Checkout';
+import PaymentCompletion from './pages/PaymentCompletion';
 import Orders from './components/MyOrders';
 import AccountSettings from './components/AccountSetting';
 import LoginForm from './components/LoginForm';
@@ -67,6 +68,7 @@ function App() {
                 <Route path="cart" element={<Cart />} />
                 <Route path="wishlist" element={<Wishlist />} />
                 <Route path="checkout" element={<Checkout />} />
+                <Route path="payment-completion" element={<PaymentCompletion />} />
                 <Route path="orders" element={<Orders />} />
                 <Route path="account" element={<AccountSettings />} />
               </Route>

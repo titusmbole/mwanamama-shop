@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-
-const BASE_URL = 'https://api.mwanamama.org/api/v1';
+import { BASE_URL } from '../utils/helpers';
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);

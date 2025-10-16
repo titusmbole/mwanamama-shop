@@ -5,8 +5,7 @@ import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useAuth } from '../contexts/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-const BASE_URL = "https://api.mwanamama.org/api/v1";
+import { BASE_URL } from '../utils/helpers';
 
 const OrderItem = ({ item }) => {
   const itemPrice = item?.price ?? 0;

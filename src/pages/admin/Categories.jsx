@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
-  Filter, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
   Package,
   Tag,
   TrendingUp,
@@ -15,9 +15,7 @@ import {
   List,
   Download
 } from 'lucide-react';
-
-// Assumed API base URL
-const BASE_URL = 'https://api.mwanamama.org/api/v1';
+import { BASE_URL } from '../../utils/helpers';
 
 const Categories = () => {
   const { adminToken } = useAdminAuth(); // Get token from auth context

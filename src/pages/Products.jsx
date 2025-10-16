@@ -11,8 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ProductListCard from '../components/ProductListCard';
-
-const BASE_URL = 'https://api.mwanamama.org/api/v1';
+import { BASE_URL } from '../utils/helpers';
 const PLACEHOLDER_IMAGE_URL = 'https://via.placeholder.com/300x200.png?text=Product+Image';
 
 // Skeleton Component for a single product card
