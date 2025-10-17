@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Truck, ShoppingCart, Lock, Shield, CheckCircle, User, X } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
-import { useAdminAuth } from "../contexts/AdminAuthContext";
+// import { useAdminAuth } from "../contexts/AdminAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -423,7 +424,8 @@ const CheckoutSkeleton = () => (
 const Checkout = () => {
   const navigate = useNavigate();
   const { cartItems, clearCart } = useCart();
-  const { admin, adminToken } = useAdminAuth();
+  // const { admin, useAuth } = useAdminAuth();
+  const { user } = useAuth();
   const [checkoutType, setCheckoutType] = useState("group");
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -496,14 +498,19 @@ const Checkout = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Try both tokens
+        const token = localStorage.getItem("userToken") || localStorage.getItem("adminToken");
+        if (!token) throw new Error("Missing token");
+  
         const [groupsRes, branchesRes] = await Promise.all([
           axios.get(`${BASE_URL}/groups/unpaginated`, {
-            headers: { Authorization: `Bearer ${adminToken}` },
+            headers: { Authorization: `Bearer ${token}` },
           }),
           axios.get(`${BASE_URL}/branches/unpaginated`, {
-            headers: { Authorization: `Bearer ${adminToken}` },
+            headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
+  
         setGroups(groupsRes.data?.content || groupsRes.data || []);
         setBranches(branchesRes.data?.content || branchesRes.data || []);
       } catch (error) {
@@ -513,26 +520,11 @@ const Checkout = () => {
         setIsLoadingData(false);
       }
     };
-
-    // Auto-populate credit officer name from localStorage adminUser
-    const adminUserString = localStorage.getItem('adminUser');
-    if (adminUserString) {
-      try {
-        const adminUserData = JSON.parse(adminUserString);
-        setFormData(prev => ({
-          ...prev,
-          creditOfficerId: adminUserData.id || adminUserData.username || "",
-          creditOfficerName: adminUserData.name || adminUserData.username || "",
-        }));
-      } catch (error) {
-        console.error("Error parsing adminUser data:", error);
-      }
-    }
-
-    if (adminToken) {
-      fetchData();
-    }
-  }, [adminToken]);
+  
+    fetchData();
+  }, []);
+  
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -581,16 +573,20 @@ const Checkout = () => {
       }));
 
       try {
-        const membersRes = await axios.get(
-          `${BASE_URL}/groups/members/${groupId}`,
-          { headers: { Authorization: `Bearer ${adminToken}` } }
-        );
+        const token = localStorage.getItem("userToken") || localStorage.getItem("adminToken");
+        if (!token) throw new Error("Missing token");
+      
+        const membersRes = await axios.get(`${BASE_URL}/groups/members/${groupId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      
         setClients(membersRes.data?.content || membersRes.data || []);
       } catch (error) {
         console.error("Error fetching group members:", error);
         toast.error("Failed to load group members");
         setClients([]);
       }
+      
     } else {
       console.error("Group not found for ID:", groupId);
       setFormData((prev) => ({
@@ -688,7 +684,7 @@ const Checkout = () => {
     }
 
     try {
-      if (!adminToken) {
+      if (!useAuth) {
         console.error("Authentication token not found. Please log in again.");
         toast.error("Authentication token not found. Please log in again.");
         setIsProcessing(false);
@@ -706,11 +702,18 @@ const Checkout = () => {
           })),
         };
 
+        const token = localStorage.getItem("userToken") || localStorage.getItem("adminToken");
+        if (!token) {
+          toast.error("Missing authentication token. Please log in again.");
+          return;
+        }
+
         console.log("Submitting group order with payload:", payload);
 
         const response = await axios.post(`${BASE_URL}/orders/place`, payload, {
-          headers: { Authorization: `Bearer ${adminToken}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
+
 
         console.log("API Response Status:", response.status);
         console.log("API Response Data:", response.data);
@@ -784,7 +787,7 @@ const Checkout = () => {
     try {
       const response = await axios.get(`${BASE}/pesa/transaction/query`, {
         params: { checkoutRequestId },
-        headers: { Authorization: `Bearer ${adminToken}` },
+        headers: { Authorization: `Bearer ${useAuth}` },
       });
 
       const { ResultCode, ResultDesc, status, transaction } = response.data;
@@ -868,77 +871,80 @@ const Checkout = () => {
 
   const handleMpesaPayment = async () => {
     setIsProcessing(true);
-
+  
     try {
-      // Simple payload for STP push
+      const token = localStorage.getItem("userToken") || localStorage.getItem("adminToken");
+      if (!token) {
+        toast.error("Missing authentication token. Please log in again.");
+        setIsProcessing(false);
+        return;
+      }
+  
+      // Simple payload for STK push
       const paymentPayload = {
         phoneNumber: mpesaPhoneNumber,
         amount: orderSummary.total.toString(),
       };
-
+  
       console.log("Initiating M-Pesa payment with payload:", paymentPayload);
-
-      // Call M-Pesa STP push endpoint
+  
+      // Call M-Pesa STK push endpoint
       const response = await axios.post(`${BASE}/pesa/stk/push`, paymentPayload, {
-        headers: { Authorization: `Bearer ${adminToken}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
+  
       console.log("M-Pesa Response Status:", response.status);
       console.log("M-Pesa Response Data:", response.data);
-
-      const customerMessage = response.data?.CustomerMessage ||
-                             "M-Pesa STK Push sent! Check your phone to complete payment.";
-
+  
+      const customerMessage =
+        response.data?.CustomerMessage ||
+        "M-Pesa STK Push sent! Check your phone to complete payment.";
+  
       if (response.status >= 200 && response.status < 300) {
-        // Extract checkoutRequestId from response for polling
         const requestId = response.data?.CheckoutRequestID || response.data?.checkoutRequestId;
         console.log("CheckoutRequestId for polling:", requestId);
-
+  
         if (requestId) {
           setCheckoutRequestId(requestId);
-
+  
           toast.success(customerMessage, {
             position: "top-center",
             autoClose: 5000,
           });
-
-          // Keep modal open with processing state
+  
           setMpesaPhoneNumber("");
           setShowErrorModal(false);
           setProcessingTransaction(true);
-
+  
           // Start polling every 3 seconds
           const intervalId = setInterval(() => {
             pollTransactionStatus(requestId);
           }, 3000);
-
           setPollingIntervalId(intervalId);
         } else {
           toast.error("Failed to get checkout request ID for payment verification.");
           setIsProcessing(false);
         }
-
       } else {
         toast.error(response.data?.message || "Failed to initiate M-Pesa payment.");
       }
     } catch (error) {
       console.error("Error initiating M-Pesa payment:", error);
-
+  
       if (axios.isAxiosError(error)) {
-        const apiErrorMessage = error.response?.data?.message ||
-                               error.response?.data?.error ||
-                               "Failed to initiate M-Pesa payment. Please try again.";
+        const apiErrorMessage =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to initiate M-Pesa payment. Please try again.";
         toast.error(apiErrorMessage);
       } else {
         toast.error("An unexpected error occurred. Please try again.");
       }
     } finally {
-      // Note: Don't set isProcessing to false here
-      // Keep the processing state for the modal
-      // You'll need to handle this when payment status is checked
+      // Optional: keep modal open while waiting for polling
     }
   };
-
+  
 
 
   const handleCloseErrorModal = () => {
