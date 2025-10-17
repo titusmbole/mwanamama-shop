@@ -2,7 +2,6 @@ export const BASE_URL = 'https://api.mwanamama.org/api/v1';
 export const BASE = 'https://api.mwanamama.org';
 
 export const SOCKET_BASE_URL="http://localhost:4850/ws"
-// Helper function to get status message from ResultCode
 export const getMpesaStatusMessage = (resultCode, resultDesc) => {
   const statusMap = {
     0: { status: 'SUCCESS', message: 'Payment completed successfully!', variant: 'success' },

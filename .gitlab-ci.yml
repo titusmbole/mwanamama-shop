@@ -16,7 +16,7 @@ variables:
   SERVER_USERNAME: "administrator"
   SERVER_IP: "69.197.164.242"
   CI_USER: "titus.eddys"
-  TOKEN: "glpat-wwFuJmrZyxr9iRegLzWP"
+  TOKEN: "glpat-3nHENTvsRT54yf2vt4ZQ"
 
 # Build stage: Builds and pushes the Docker image
 build:
