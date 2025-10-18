@@ -80,15 +80,21 @@ const CartPage = () => {
   };
 
   const handleCheckout = () => {
-    // Check if user is logged in AND cart is not empty before allowing checkout
-    if (!user || !user.token) {
-        toast.error("You must be logged in to proceed to checkout.");
-    } else if (cartItems.length === 0) {
-      toast.warn("Your cart is empty!");
-    } else {
-      navigate('/checkout'); 
+    const token = localStorage.getItem("userToken") || localStorage.getItem("adminToken");
+  
+    if (!token) {
+      toast.error("You must be logged in to proceed to checkout.");
+      return;
     }
+  
+    if (cartItems.length === 0) {
+      toast.warn("Your cart is empty!");
+      return;
+    }
+  
+    navigate('/checkout');
   };
+  
   
   // Calculations
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
