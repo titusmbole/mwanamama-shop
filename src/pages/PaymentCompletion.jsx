@@ -19,6 +19,7 @@ const PaymentCompletion = () => {
   const [submissionError, setSubmissionError] = useState(null);
   const [submissionSuccess, setSubmissionSuccess] = useState(null);
   const [pulling, setPulling] = useState(true);
+  const [loading, setIsLoading ] = useState(true)
 
   useEffect(() => {
     // Try to load data from localStorage first
@@ -33,19 +34,19 @@ const PaymentCompletion = () => {
           // Clear the localStorage after loading
           localStorage.removeItem('paymentCompletionData');
         } else {
-          navigate('/');
+          // navigate('/');
           return;
         }
         console.log(parsedData)
       } catch (error) {
         setPulling(false)
-        console.error("Error parsing stored data:", error);
-        navigate('/');
+        // console.error("Error parsing stored data:", error);
+        // navigate('/');
         return;
       }
     } else if (!checkoutData || !checkoutData.checkoutRequestId || !checkoutData.transaction) {
-      toast.error("Missing payment data. Redirecting to checkout.");
-      navigate('/');
+      // toast.error("Missing payment data. Redirecting to checkout.");
+      // navigate('/');
       return;
     }
 
@@ -93,7 +94,7 @@ const PaymentCompletion = () => {
       console.log("Submitting order to API:", JSON.stringify(orderPayload, null, 2));
 
       // Submit order to API
-      const response = await axios.post(`${BASE_URL}/individual/purchase`, orderPayload, {
+      const response = await axios.post(`${BASE_URL}/individual/customers/purchase`, orderPayload, {
         headers: { Authorization: `Bearer ${adminToken}` },
       });
 
@@ -107,10 +108,12 @@ const PaymentCompletion = () => {
         orderSummary
       });
 
-      toast.success("Order completed successfully! 🎉", {
-        position: "top-center",
+      toast.success(`${response.data.message} 🎉`, {
+        position: "top-right",
         autoClose: 5000,
       });
+
+      setTimeout(() => window.location.href = "/", 1000)
 
     } catch (error) {
       console.error("Error submitting order:", error);
@@ -125,20 +128,20 @@ const PaymentCompletion = () => {
           details: error.response?.data
         });
 
-        toast.error(apiErrorMessage, {
-          position: "top-center",
-          autoClose: 5000,
-        });
+        // toast.error(apiErrorMessage, {
+        //   position: "top-center",
+        //   autoClose: 5000,
+        // });
       } else {
         setSubmissionError({
           message: "An unexpected error occurred while completing your order.",
           details: error.message
         });
 
-        toast.error("An unexpected error occurred. Please contact support.", {
-          position: "top-center",
-          autoClose: 5000,
-        });
+        // toast.error("An unexpected error occurred. Please contact support.", {
+        //   position: "top-center",
+        //   autoClose: 5000,
+        // });
       }
     } finally {
       setIsSubmitting(false);
@@ -173,6 +176,18 @@ const PaymentCompletion = () => {
                     This may take a few seconds as we securely process your payment details.
                   </small>
                 </div>
+
+                <div className="d-flex gap-3 justify-content-center">
+                      <button
+                        onClick={handleNewOrder}
+                        className="btn btn-success px-4"
+                      >
+                       Cancel
+                      </button>
+                    </div>
+
+
+
               </div>
             </div>
           </div>
@@ -192,39 +207,7 @@ const PaymentCompletion = () => {
                 <p className="text-muted fs-5">Your order has been processed</p>
               </div>
 
-              {submissionError ? (
-                <div className="card border-0 shadow-sm">
-                  <div className="card-body p-5 text-center">
-                    <div className="mb-4">
-                      <div className="text-danger" style={{ fontSize: '4rem' }}>
-                        ❌
-                      </div>
-                    </div>
-                    <h3 className="fw-bold text-danger mb-3">Order Submission Failed</h3>
-                    <div className="alert alert-danger">
-                      <strong>{submissionError.message}</strong>
-                    </div>
-                    <small className="text-muted d-block mb-4">
-                      Don't worry, your payment was successful. Please contact support to complete your order.
-                    </small>
-                    <div className="d-flex gap-3 justify-content-center">
-                      <button
-                        onClick={handleBackToDashboard}
-                        className="btn btn-secondary px-4"
-                      >
-                        <ArrowLeft size={18} className="me-2" />
-                        Back to Dashboard
-                      </button>
-                      <button
-                        onClick={handleNewOrder}
-                        className="btn btn-primary px-4"
-                      >
-                        Try New Order
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : submissionSuccess ? (
+             
                 <div className="card border-0 shadow-sm">
                   <div className="card-body p-5 text-center">
                     <div className="mb-4">
@@ -232,10 +215,10 @@ const PaymentCompletion = () => {
                     </div>
                     <h3 className="fw-bold text-success mb-3">Order Completed Successfully!</h3>
                     <div className="alert alert-success mb-4">
-                      <strong>{submissionSuccess.message}</strong>
+                      {/* <strong>{submissionSuccess.message}</strong> */}
                     </div>
 
-                    <div className="row justify-content-center mb-4">
+                    {/* <div className="row justify-content-center mb-4">
                       <div className="col-12 col-md-8">
                         <div className="text-start">
                           <h5 className="fw-semibold mb-3">Order Details</h5>
@@ -281,7 +264,7 @@ const PaymentCompletion = () => {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
                     <div className="alert alert-success d-flex align-items-center justify-content-center mb-4" role="alert">
                       <Shield className="me-2 text-success" size={20} />
@@ -304,7 +287,6 @@ const PaymentCompletion = () => {
                     </div>
                   </div>
                 </div>
-              ) : null}
             </div>
           </div>
         </div>
