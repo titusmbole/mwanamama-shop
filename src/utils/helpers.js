@@ -1,5 +1,5 @@
-export const BASE_URL = 'https://api.mwanamama.org/api/v1';
-export const BASE = 'https://api.mwanamama.org';
+export const BASE_URL = 'http://localhost:4850/api/v1';
+export const BASE = 'http://localhost:4850';
 
 export const SOCKET_BASE_URL="http://localhost:4850/ws"
 export const getMpesaStatusMessage = (resultCode, resultDesc) => {
