@@ -22,7 +22,7 @@ variables:
 build:
    stage: build
    tags:
-     - builder
+     - deploy
    only:
      - main
    script:
